@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import '../../services/api_service_dio.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final token = prefs.getString('token');
     if (token != null && token.isNotEmpty) {
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      context.go('/');
     }
   }
 
@@ -48,12 +49,12 @@ class _LoginScreenState extends State<LoginScreen> {
       await ApiServiceDio.sendOtp(phone);
 
       if (!mounted) return;
-      Navigator.pushNamed(context, '/otp-login', arguments: phone);
+      context.push('/otp-login', extra: phone);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -61,8 +62,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    const Color primary = Color(0xFF546E7A);
+    final Color cardColor = theme.cardColor;
+    final Color scaffoldBg = theme.scaffoldBackgroundColor;
+    final Color borderColor =
+        isDark ? Colors.grey[800]! : const Color(0xFFDDDDDD);
+    final Color shadowColor =
+        isDark
+            ? Colors.black.withAlpha((0.18 * 255).toInt())
+            : const Color(0x3F000000);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scaffoldBg,
       body: SafeArea(
         child: Stack(
           children: [
@@ -71,9 +84,21 @@ class _LoginScreenState extends State<LoginScreen> {
               right: 16,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                children: const [
-                  Text('En', style: TextStyle(fontSize: 14, fontFamily: 'Cairo', color: Color(0xFF757575))),
-                  Text('Ar', style: TextStyle(fontSize: 14, fontFamily: 'Cairo', color: Color(0xFF757575))),
+                children: [
+                  Text(
+                    'En',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'Cairo',
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
+                  Text(
+                    'Ar',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontFamily: 'Cairo',
+                      color: const Color(0xFF757575),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -82,31 +107,71 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   const SizedBox(height: 80),
-                  const Text('loom', style: TextStyle(fontSize: 40, color: Color(0xFF546E7A), fontStyle: FontStyle.italic, fontFamily: 'Poppins')),
+                  const Text(
+                    'loom',
+                    style: TextStyle(
+                      fontSize: 40,
+                      color: primary,
+                      fontStyle: FontStyle.italic,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  const Text('مَلبوس الهّنا من لووم', style: TextStyle(fontSize: 20, fontFamily: 'Tajawal', color: Color(0xFF78909C))),
+                  Text(
+                    'مَلبوس الهّنا من لووم',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Tajawal',
+                      color:
+                          isDark ? Colors.grey[400] : const Color(0xFF78909C),
+                    ),
+                  ),
                   const SizedBox(height: 60),
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 40),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFAFAFA),
+                      color: cardColor,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFDDDDDD)),
-                      boxShadow: const [BoxShadow(color: Color(0x3F000000), blurRadius: 4, offset: Offset(0, 4))],
+                      border: Border.all(color: borderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: shadowColor,
+                          blurRadius: 4,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Row(
                       children: [
-                        const Text('🇮🇶 +964', style: TextStyle(fontSize: 16, color: Colors.black, fontFamily: 'Tajawal')),
+                        Text(
+                          '🇮🇶 +964',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: isDark ? Colors.white : Colors.black,
+                            fontFamily: 'Tajawal',
+                          ),
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: _phoneController,
                             keyboardType: TextInputType.phone,
-                            decoration: const InputDecoration(
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontFamily: 'Poppins',
+                            ),
+                            decoration: InputDecoration(
                               border: InputBorder.none,
                               hintText: '7XXXXXXXXXX',
-                              hintStyle: TextStyle(color: Color(0xFF999999), fontSize: 14, fontFamily: 'Poppins'),
+                              hintStyle: TextStyle(
+                                color:
+                                    isDark
+                                        ? Colors.grey[600]
+                                        : const Color(0xFF999999),
+                                fontSize: 14,
+                                fontFamily: 'Poppins',
+                              ),
                             ),
                           ),
                         ),
@@ -120,26 +185,56 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: 300,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF546E7A),
+                        color: primary,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [BoxShadow(color: Color(0x19000000), blurRadius: 4, offset: Offset(0, 2))],
+                        boxShadow: [
+                          BoxShadow(
+                            color: shadowColor,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                       child: Center(
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('تسجيل الدخول', style: TextStyle(color: Colors.white, fontSize: 18, fontFamily: 'Tajawal')),
+                        child:
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                                : const Text(
+                                  'تسجيل الدخول',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontFamily: 'Tajawal',
+                                  ),
+                                ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/signup'),
+                    onTap: () => context.push('/signup'),
                     child: RichText(
-                      text: const TextSpan(
-                        style: TextStyle(fontSize: 16, fontFamily: 'Cairo'),
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontFamily: 'Cairo',
+                        ),
                         children: [
-                          TextSpan(text: 'مستخدم جديد؟ ', style: TextStyle(color: Color(0xFF757575))),
-                          TextSpan(text: 'أنشئ حسابك', style: TextStyle(color: Color(0xFF546E7A))),
+                          TextSpan(
+                            text: 'مستخدم جديد؟ ',
+                            style: TextStyle(
+                              color:
+                                  isDark
+                                      ? Colors.grey[400]
+                                      : const Color(0xFF757575),
+                            ),
+                          ),
+                          const TextSpan(
+                            text: 'أنشئ حسابك',
+                            style: TextStyle(color: primary),
+                          ),
                         ],
                       ),
                     ),

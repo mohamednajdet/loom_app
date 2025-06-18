@@ -5,28 +5,30 @@ import '../blocs/cart/cart_state.dart';
 import '../blocs/cart/cart_event.dart';
 import '../services/api_service_dio.dart';
 import '../widgets/back_button_custom.dart';
+import 'package:go_router/go_router.dart';
 
 class CheckoutScreen extends StatelessWidget {
   const CheckoutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final cardColor = theme.cardColor;
+    final subTextColor = theme.textTheme.bodySmall?.color ?? Colors.grey;
+    final borderColor = isDark ? Colors.grey[800]! : const Color(0xFFDDDDDD);
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: SafeArea(
           child: BlocBuilder<CartBloc, CartState>(
             builder: (context, state) {
               final cartItems = state.cartItems;
-              final totalItems = cartItems.fold<int>(
-                0,
-                (sum, item) => sum + item.quantity,
-              );
-              final totalPrice = cartItems.fold<int>(
-                0,
-                (sum, item) => sum + item.product.price * item.quantity,
-              );
+              final selectedAddress = state.selectedAddressLabel;
+              final totalItems = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
+              final totalPrice = cartItems.fold<int>(0, (sum, item) => sum + item.product.price * item.quantity);
               final deliveryFee = totalPrice >= 100000 ? 0 : 5000;
               final grandTotal = totalPrice + deliveryFee;
 
@@ -38,17 +40,19 @@ class CheckoutScreen extends StatelessWidget {
                     const BackButtonCustom(title: 'إتمام الطلب'),
                     const SizedBox(height: 20),
 
-                    // 🔹 عنوان التوصيل
+                    // عنوان التوصيل
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x26000000),
+                            color: isDark
+                                ? Colors.black.withAlpha(33) // 0.13 * 255 ≈ 33
+                                : const Color(0x26000000),   // نفسها للنورمال
                             blurRadius: 10,
-                            offset: Offset(0, 2),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
@@ -61,39 +65,18 @@ class CheckoutScreen extends StatelessWidget {
                               color: const Color(0xFF546E7A),
                               borderRadius: BorderRadius.circular(5),
                             ),
-                            child: const Icon(
-                              Icons.location_on,
-                              color: Colors.white,
-                            ),
+                            child: const Icon(Icons.location_on, color: Colors.white),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'حي النصر',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontFamily: 'Cairo',
-                                    color: Color(0xFF333333),
-                                  ),
-                                ),
-                                Text(
-                                  'المنزل, كركوك حي النصر',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: 'Cairo',
-                                    color: Color(0xFF888888),
-                                  ),
-                                ),
-                              ],
+                          Expanded(
+                            child: Text(
+                              selectedAddress ?? 'لم يتم اختيار عنوان',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 16,
+                                fontFamily: 'Cairo',
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
-                          ),
-                          const Icon(
-                            Icons.edit,
-                            size: 24,
-                            color: Color(0xFF546E7A),
                           ),
                         ],
                       ),
@@ -101,20 +84,22 @@ class CheckoutScreen extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // 🔹 العناصر بالسلة
+                    // المنتجات
                     ...cartItems.map(
                       (item) => Padding(
                         padding: const EdgeInsets.only(bottom: 20),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: cardColor,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: Color(0x0C000000),
+                                color: isDark
+                                    ? Colors.black.withAlpha(31) // 0.12 * 255 ≈ 31
+                                    : Colors.black.withAlpha(15), // 0.06 * 255 ≈ 15
                                 blurRadius: 8,
-                                offset: Offset(0, 2),
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -126,58 +111,44 @@ class CheckoutScreen extends StatelessWidget {
                                 height: 80,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
-                                  image:
-                                      item.product.images.isNotEmpty
-                                          ? DecorationImage(
-                                            image: NetworkImage(
-                                              item.product.images.first,
-                                            ),
-                                            fit: BoxFit.cover,
-                                          )
-                                          : null,
-                                  color: const Color(0xFFD9D9D9),
+                                  image: item.product.images.isNotEmpty
+                                      ? DecorationImage(image: NetworkImage(item.product.images.first), fit: BoxFit.cover)
+                                      : null,
+                                  color: isDark
+                                      ? Colors.grey[800]
+                                      : const Color(0xFFD9D9D9),
                                 ),
-                                child:
-                                    item.product.images.isEmpty
-                                        ? const Icon(
-                                          Icons.image,
-                                          color: Colors.grey,
-                                        )
-                                        : null,
+                                child: item.product.images.isEmpty
+                                    ? Icon(Icons.image, color: isDark ? Colors.grey[500] : Colors.grey)
+                                    : null,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      item.product.name,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontFamily: 'Cairo',
-                                        color: Color(0xFF29434E),
-                                      ),
-                                    ),
-                                    Text(
-                                      '${item.product.price * item.quantity} د.ع',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontFamily: 'Cairo',
-                                        color: Color(0xFF757575),
-                                      ),
-                                    ),
+                                    Text(item.product.name,
+                                        style: theme.textTheme.bodyLarge?.copyWith(
+                                          fontSize: 14,
+                                          fontFamily: 'Cairo',
+                                          color: theme.colorScheme.primary,
+                                        )),
+                                    Text('${item.product.price * item.quantity} د.ع',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: 12,
+                                          fontFamily: 'Cairo',
+                                          color: subTextColor,
+                                        )),
                                     Row(
                                       children: [
-                                        _buildColorCircle(item.selectedColor),
+                                        _buildColorCircle(item.selectedColor, theme),
                                         const SizedBox(width: 6),
-                                        Text(
-                                          'القياس: ${item.selectedSize}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontFamily: 'Cairo',
-                                            color: Color(0xFF29434E),
-                                          ),
-                                        ),
+                                        Text('القياس: ${item.selectedSize}',
+                                            style: theme.textTheme.bodyMedium?.copyWith(
+                                              fontSize: 14,
+                                              fontFamily: 'Cairo',
+                                              color: theme.colorScheme.primary,
+                                            )),
                                       ],
                                     ),
                                   ],
@@ -191,109 +162,76 @@ class CheckoutScreen extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // 🔹 الملخص المالي
+                    // ملخص الفاتورة
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
-                        border: Border.all(color: const Color(0xFFDDDDDD)),
+                        color: cardColor,
+                        border: Border.all(color: borderColor),
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x3F000000),
+                            color: isDark
+                                ? Colors.black.withAlpha(33) // 0.13 * 255 ≈ 33
+                                : const Color(0x3F000000),
                             blurRadius: 4,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSummaryLine('عدد المنتجات :', '$totalItems'),
-                          _buildSummaryLine(
-                            'مجموع المنتجات :',
-                            '$totalPrice د.ع',
-                          ),
-                          _buildSummaryLine(
-                            'التوصيل :',
-                            deliveryFee == 0 ? 'مجاناً' : '$deliveryFee د.ع',
-                          ),
-                          _buildSummaryLine(
-                            'الاجمالي :',
-                            '$grandTotal د.ع',
-                            isTotal: true,
-                          ),
+                          _buildSummaryLine(theme, 'عدد المنتجات :', '$totalItems'),
+                          _buildSummaryLine(theme, 'مجموع المنتجات :', '$totalPrice د.ع'),
+                          _buildSummaryLine(theme, 'التوصيل :', deliveryFee == 0 ? 'مجاناً' : '$deliveryFee د.ع'),
+                          _buildSummaryLine(theme, 'الاجمالي :', '$grandTotal د.ع', isTotal: true),
                         ],
                       ),
                     ),
 
                     const SizedBox(height: 20),
 
-                    // 🔹 أزرار تأكيد وإلغاء
+                    // أزرار
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF546E7A),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: () async {
-                              final cartItems =
-                                  context.read<CartBloc>().state.cartItems;
-
-                              if (cartItems.isEmpty) {
+                              if (cartItems.isEmpty || selectedAddress == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('🚫 السلة فارغة'),
-                                  ),
+                                  const SnackBar(content: Text('🚫 تأكد من إضافة منتجات واختيار عنوان')),
                                 );
                                 return;
                               }
 
-                              final messenger = ScaffoldMessenger.of(
-                                context,
-                              ); // 🔹 نحجزه قبل await
-                              final nav = Navigator.of(
-                                context,
-                              ); // 🔹 نحجزه قبل await
-                              final bloc =
-                                  context
-                                      .read<CartBloc>(); // 🔹 نحجزه قبل await
+                              final messenger = ScaffoldMessenger.of(context);
+                              final bloc = context.read<CartBloc>();
 
                               try {
                                 await ApiServiceDio.sendOrder(
                                   items: cartItems,
-                                  address: 'المنزل, كركوك حي النصر',
-                                );
-
-                                messenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('✅ تم إرسال الطلب بنجاح'),
-                                  ),
+                                  address: selectedAddress,
                                 );
 
                                 bloc.add(ClearCart());
-                                nav.pop(); // رجوع
+                                messenger.showSnackBar(
+                                  const SnackBar(content: Text('✅ تم إرسال الطلب بنجاح')),
+                                );
+                                if (!context.mounted) return;
+                                context.pop();
                               } catch (e) {
                                 messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('❌ فشل إرسال الطلب: $e'),
-                                  ),
+                                  SnackBar(content: Text('❌ فشل إرسال الطلب: $e')),
                                 );
                               }
                             },
-
-                            child: const Text(
-                              'تأكيد',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                color: Colors.white,
-                              ),
-                            ),
+                            child: const Text('تأكيد', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -301,20 +239,10 @@ class CheckoutScreen extends StatelessWidget {
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF29434E),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text(
-                              'إلغاء',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                color: Colors.white,
-                              ),
-                            ),
+                            onPressed: () => context.pop(),
+                            child: const Text('إلغاء', style: TextStyle(fontFamily: 'Cairo', color: Colors.white)),
                           ),
                         ),
                       ],
@@ -329,7 +257,7 @@ class CheckoutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildColorCircle(String colorName) {
+  Widget _buildColorCircle(String colorName, ThemeData theme) {
     final color = _getColorFromName(colorName);
     return Container(
       width: 18,
@@ -337,12 +265,12 @@ class CheckoutScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black26),
+        border: Border.all(color: theme.dividerColor),
       ),
     );
   }
 
-  Widget _buildSummaryLine(String label, String value, {bool isTotal = false}) {
+  Widget _buildSummaryLine(ThemeData theme, String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Align(
@@ -352,29 +280,22 @@ class CheckoutScreen extends StatelessWidget {
             children: [
               TextSpan(
                 text: '$label ',
-                style: TextStyle(
-                  color:
-                      isTotal
-                          ? const Color(0xFF2E7D32)
-                          : const Color(0xFF333333),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isTotal ? Colors.green : theme.textTheme.bodyLarge?.color,
                   fontSize: 16,
                   fontFamily: 'Cairo',
                 ),
               ),
               TextSpan(
                 text: value,
-                style: TextStyle(
-                  color:
-                      isTotal
-                          ? const Color(0xFF2E7D32)
-                          : const Color(0xFF757575),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isTotal ? Colors.green : theme.textTheme.bodySmall?.color,
                   fontSize: 16,
                   fontFamily: 'Cairo',
                 ),
               ),
             ],
           ),
-          textAlign: TextAlign.right,
         ),
       ),
     );

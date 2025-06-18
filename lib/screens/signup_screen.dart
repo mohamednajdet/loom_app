@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -20,41 +21,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final phone = _phoneController.text.trim();
     final gender = selectedGender;
 
-    // ✅ تحقق من الحقول
     if (name.isEmpty || phone.isEmpty || gender == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("يرجى ملء جميع الحقول")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("يرجى ملء جميع الحقول")));
       return;
     }
 
-    // ✅ تحقق من الرقم: لازم يكون 10 أرقام ويبدأ بـ 7 (بعد إزالة 0 أو +964)
     final normalized = _normalizePhone(phone);
     final pureNumber = normalized.replaceAll('+964', '');
 
     if (pureNumber.length != 10 || !pureNumber.startsWith('7')) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("يرجى إدخال رقم هاتف صحيح يبدأ بـ 7 ويتكون من 10 أرقام")),
+        const SnackBar(
+          content: Text(
+            "يرجى إدخال رقم هاتف صحيح يبدأ بـ 7 ويتكون من 10 أرقام",
+          ),
+        ),
       );
       return;
     }
 
-    Navigator.pushNamed(
-      context,
+    context.push(
       '/otp-register',
-      arguments: {
-        'name': name,
-        'phone': normalized,
-        'gender': gender,
-      },
+      extra: {'name': name, 'phone': normalized, 'gender': gender},
     );
   }
 
   String _normalizePhone(String input) {
     String phone = input.trim();
-
     if (phone.startsWith('+964')) return phone;
     if (phone.startsWith('0')) phone = phone.substring(1);
     return '+964$phone';
@@ -62,8 +59,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = const Color(0xFF546E7A);
+    final cardColor = theme.cardColor;
+    final shadowColor =
+        isDark
+            ? Colors.black.withValues(alpha: 0.13 * 255)
+            : const Color(0x19000000);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -72,36 +78,42 @@ class _SignUpScreenState extends State<SignUpScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                const Text(
+                Text(
                   'loom',
                   style: TextStyle(
-                    color: Color(0xFF546E7A),
+                    color: primary,
                     fontSize: 40,
                     fontStyle: FontStyle.italic,
                     fontFamily: 'Poppins',
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'خطوة وحدة... وتبدي رحلة أناقتك',
                   style: TextStyle(
-                    color: Color(0xFF78909C),
+                    color: const Color(0xFF78909C),
                     fontSize: 20,
                     fontFamily: 'Tajawal',
                   ),
                 ),
                 const SizedBox(height: 40),
-                _buildInputField(_nameController, 'أدخل اسمك الكامل'),
+                _buildInputField(
+                  _nameController,
+                  'أدخل اسمك الكامل',
+                  theme,
+                  cardColor,
+                  shadowColor,
+                ),
                 const SizedBox(height: 20),
-                _buildPhoneField(),
+                _buildPhoneField(theme, cardColor, shadowColor),
                 const SizedBox(height: 20),
-                const Align(
+                Align(
                   alignment: Alignment.centerRight,
                   child: Text(
                     ' : الجنس',
-                    style: TextStyle(
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       fontSize: 16,
-                      color: Color(0xFF999999),
+                      color: theme.hintColor,
                       fontFamily: 'Cairo',
                     ),
                   ),
@@ -113,16 +125,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       selectedGender = value;
                     });
                   },
+                  textColor: theme.textTheme.bodyLarge?.color,
+                  activeColor: primary,
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _handleGoToOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF546E7A),
+                    backgroundColor: primary,
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
+                    elevation: 2,
                   ),
                   child: const Text(
                     'إنشاء حساب',
@@ -134,31 +149,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'بالتسجيل أنت توافق على شروط الاستخدام وسياسة الخصوصية.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF999999),
+                    color: theme.hintColor,
                     fontFamily: 'Poppins',
                   ),
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushReplacementNamed(context, '/login');
+                    context.go('/login');
                   },
                   child: RichText(
-                    text: const TextSpan(
-                      style: TextStyle(fontSize: 16, fontFamily: 'Tajawal'),
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontFamily: 'Tajawal',
+                      ),
                       children: [
                         TextSpan(
                           text: 'لديك حساب؟ ',
-                          style: TextStyle(color: Color(0xFF757575)),
+                          style: TextStyle(color: theme.hintColor),
                         ),
                         TextSpan(
                           text: 'سجل دخول',
-                          style: TextStyle(color: Color(0xFF546E7A)),
+                          style: TextStyle(color: primary),
                         ),
                       ],
                     ),
@@ -173,31 +191,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _buildInputField(TextEditingController controller, String hint) {
+  Widget _buildInputField(
+    TextEditingController controller,
+    String hint,
+    ThemeData theme,
+    Color cardColor,
+    Color shadowColor,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        boxShadow: const [
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x3F000000),
+            color: shadowColor,
             blurRadius: 4,
-            offset: Offset(0, 4),
-          )
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: TextField(
         controller: controller,
         textAlign: TextAlign.right,
         textDirection: TextDirection.rtl,
+        style: theme.textTheme.bodyLarge?.copyWith(fontFamily: 'Cairo'),
         decoration: InputDecoration(
           border: InputBorder.none,
           hintText: hint,
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontSize: 16,
-            color: Color(0xFF999999),
+            color: theme.hintColor,
             fontFamily: 'Cairo',
           ),
         ),
@@ -205,28 +230,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _buildPhoneField() {
+  Widget _buildPhoneField(ThemeData theme, Color cardColor, Color shadowColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: cardColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-        boxShadow: const [
+        border: Border.all(color: theme.dividerColor),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x3F000000),
+            color: shadowColor,
             blurRadius: 4,
-            offset: Offset(0, 4),
-          )
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             '🇮🇶 +964',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.black,
+              color: theme.textTheme.bodyLarge?.color,
               fontFamily: 'Tajawal',
             ),
           ),
@@ -236,11 +261,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
               controller: _phoneController,
               keyboardType: TextInputType.phone,
               textAlign: TextAlign.right,
-              decoration: const InputDecoration(
+              style: theme.textTheme.bodyLarge?.copyWith(fontFamily: 'Poppins'),
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: '07XXXXXXXXX',
                 hintStyle: TextStyle(
-                  color: Color(0xFF999999),
+                  color: theme.hintColor,
                   fontSize: 14,
                   fontFamily: 'Poppins',
                 ),
@@ -256,11 +282,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
 class GenderSelector extends StatelessWidget {
   final String? gender;
   final void Function(String?) onChanged;
+  final Color? textColor;
+  final Color? activeColor;
 
   const GenderSelector({
     super.key,
     required this.gender,
     required this.onChanged,
+    this.textColor,
+    this.activeColor,
   });
 
   @override
@@ -274,8 +304,12 @@ class GenderSelector extends StatelessWidget {
               value: 'male',
               groupValue: gender,
               onChanged: onChanged,
+              activeColor: activeColor,
             ),
-            const Text('ذكر'),
+            Text(
+              'ذكر',
+              style: TextStyle(color: textColor, fontFamily: 'Cairo'),
+            ),
           ],
         ),
         const SizedBox(width: 20),
@@ -285,8 +319,12 @@ class GenderSelector extends StatelessWidget {
               value: 'female',
               groupValue: gender,
               onChanged: onChanged,
+              activeColor: activeColor,
             ),
-            const Text('أنثى'),
+            Text(
+              'أنثى',
+              style: TextStyle(color: textColor, fontFamily: 'Cairo'),
+            ),
           ],
         ),
       ],

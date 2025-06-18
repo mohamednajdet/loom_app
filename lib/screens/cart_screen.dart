@@ -4,16 +4,58 @@ import '../blocs/cart/cart_bloc.dart';
 import '../blocs/cart/cart_state.dart';
 import '../blocs/cart/cart_event.dart';
 import '../widgets/back_button_custom.dart';
+import '../services/api_service_dio.dart';
+import 'package:go_router/go_router.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
   @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  List<Map<String, dynamic>> userAddresses = [];
+  Map<String, dynamic>? selectedAddress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAddresses();
+  }
+
+  Future<void> _loadAddresses() async {
+    try {
+      final result = await ApiServiceDio.fetchUserAddresses();
+      if (result.isNotEmpty) {
+        setState(() {
+          userAddresses = result;
+          selectedAddress = result.first;
+        });
+      }
+    } catch (e) {
+      // ignore error
+    }
+  }
+
+  void _selectAddress(Map<String, dynamic> address) {
+    setState(() {
+      selectedAddress = address;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final cardColor = theme.cardColor;
+    final scaffoldBg = theme.scaffoldBackgroundColor;
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: scaffoldBg,
         body: SafeArea(
           child: BlocBuilder<CartBloc, CartState>(
             builder: (context, state) {
@@ -32,26 +74,26 @@ class CartScreen extends StatelessWidget {
               if (cartItems.isEmpty) {
                 return Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 8,
                         vertical: 12,
                       ),
-                      child: const BackButtonCustom(title: 'السلة'),
+                      child: BackButtonCustom(title: 'السلة'),
                     ),
                     const SizedBox(height: 60),
-                    const Icon(
+                    Icon(
                       Icons.shopping_cart_outlined,
                       size: 100,
-                      color: Colors.grey,
+                      color: isDark ? Colors.grey[600] : Colors.grey,
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'السلة فارغة حالياً',
-                      style: TextStyle(
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         fontSize: 18,
                         fontFamily: 'Cairo',
-                        color: Color(0xFF555555),
+                        color: isDark ? Colors.grey[200] : const Color(0xFF555555),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -62,7 +104,7 @@ class CartScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => context.go('/'),
                       child: const Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: 24,
@@ -89,33 +131,49 @@ class CartScreen extends StatelessWidget {
                   children: [
                     const BackButtonCustom(title: 'السلة'),
                     const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD9D9D9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: const [
-                          Icon(
-                            Icons.location_on_outlined,
-                            color: Color(0xFF29434E),
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'المنزل - بغداد، حي الجامعة، شارع المدارس',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontFamily: 'Cairo',
-                                color: Color(0xFF29434E),
+                    if (userAddresses.isNotEmpty)
+                      Column(
+                        children: userAddresses.map((address) {
+                          final isSelected =
+                              selectedAddress != null &&
+                              selectedAddress!['_id'] == address['_id'];
+                          return GestureDetector(
+                            onTap: () => _selectAddress(address),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? primary.withAlpha((0.15 * 255).toInt())
+                                    : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected ? primary : Colors.transparent,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on_outlined,
+                                    color: primary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      address['label'],
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontFamily: 'Cairo',
+                                        color: primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          );
+                        }).toList(),
                       ),
-                    ),
                     const SizedBox(height: 20),
                     ...cartItems.map(
                       (item) => Padding(
@@ -123,13 +181,15 @@ class CartScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: cardColor,
                             borderRadius: BorderRadius.circular(16),
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
-                                color: Color(0x0C000000),
+                                color: isDark
+                                    ? Colors.black.withAlpha((0.12 * 255).toInt())
+                                    : Colors.black.withAlpha((0.06 * 255).toInt()),
                                 blurRadius: 8,
-                                offset: Offset(0, 2),
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -140,25 +200,27 @@ class CartScreen extends StatelessWidget {
                                 height: 80,
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(16),
-                                  image:
-                                      item.product.images.isNotEmpty
-                                          ? DecorationImage(
-                                            image: NetworkImage(
-                                              item.product.images.first,
-                                            ),
-                                            fit: BoxFit.cover,
-                                          )
-                                          : null,
-                                  color: const Color(0xFFD9D9D9),
-                                ),
-                                child:
-                                    item.product.images.isEmpty
-                                        ? const Icon(
-                                          Icons.image,
-                                          size: 32,
-                                          color: Colors.grey,
+                                  image: item.product.images.isNotEmpty
+                                      ? DecorationImage(
+                                          image: NetworkImage(
+                                            item.product.images.first,
+                                          ),
+                                          fit: BoxFit.cover,
                                         )
-                                        : null,
+                                      : null,
+                                  color: isDark
+                                      ? Colors.grey[800]
+                                      : const Color(0xFFD9D9D9),
+                                ),
+                                child: item.product.images.isEmpty
+                                    ? Icon(
+                                        Icons.image,
+                                        size: 32,
+                                        color: isDark
+                                            ? Colors.grey[500]
+                                            : Colors.grey,
+                                      )
+                                    : null,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -167,30 +229,32 @@ class CartScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       item.product.name,
-                                      style: const TextStyle(
+                                      style: theme.textTheme.bodyLarge?.copyWith(
                                         fontSize: 14,
-                                        color: Color(0xFF29434E),
+                                        color: primary,
                                         fontFamily: 'Cairo',
                                       ),
                                     ),
                                     Text(
                                       '${item.product.price * item.quantity} د.ع',
-                                      style: const TextStyle(
+                                      style: theme.textTheme.bodySmall?.copyWith(
                                         fontSize: 12,
-                                        color: Color(0xFF757575),
+                                        color: isDark
+                                            ? Colors.grey[300]
+                                            : const Color(0xFF757575),
                                         fontFamily: 'Cairo',
                                       ),
                                     ),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
-                                        _buildColorCircle(item.selectedColor),
+                                        _buildColorCircle(item.selectedColor, theme),
                                         const SizedBox(width: 6),
                                         Text(
                                           'القياس: ${item.selectedSize}',
-                                          style: const TextStyle(
+                                          style: theme.textTheme.bodyMedium?.copyWith(
                                             fontSize: 14,
-                                            color: Color(0xFF29434E),
+                                            color: primary,
                                             fontFamily: 'Cairo',
                                           ),
                                         ),
@@ -202,43 +266,42 @@ class CartScreen extends StatelessWidget {
                                       children: [
                                         _buildCircleButton('+', () {
                                           context.read<CartBloc>().add(
-                                            IncreaseQuantity(
-                                              product: item.product,
-                                              selectedColor: item.selectedColor,
-                                              selectedSize: item.selectedSize,
-                                            ),
-                                          );
-                                        }),
+                                                IncreaseQuantity(
+                                                  product: item.product,
+                                                  selectedColor: item.selectedColor,
+                                                  selectedSize: item.selectedSize,
+                                                ),
+                                              );
+                                        }, theme),
                                         Padding(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 10,
                                           ),
                                           child: Text(
                                             '${item.quantity}',
-                                            style: const TextStyle(
+                                            style: theme.textTheme.bodyLarge?.copyWith(
                                               fontSize: 16,
                                             ),
                                           ),
                                         ),
                                         _buildCircleButton('-', () {
                                           context.read<CartBloc>().add(
-                                            DecreaseQuantity(
-                                              product: item.product,
-                                              selectedColor: item.selectedColor,
-                                              selectedSize: item.selectedSize,
-                                            ),
-                                          );
-                                        }),
+                                                DecreaseQuantity(
+                                                  product: item.product,
+                                                  selectedColor: item.selectedColor,
+                                                  selectedSize: item.selectedSize,
+                                                ),
+                                              );
+                                        }, theme),
                                         IconButton(
                                           onPressed: () {
                                             context.read<CartBloc>().add(
-                                              RemoveFromCart(
-                                                product: item.product,
-                                                selectedColor:
-                                                    item.selectedColor,
-                                                selectedSize: item.selectedSize,
-                                              ),
-                                            );
+                                                  RemoveFromCart(
+                                                    product: item.product,
+                                                    selectedColor: item.selectedColor,
+                                                    selectedSize: item.selectedSize,
+                                                  ),
+                                                );
                                           },
                                           icon: const Icon(
                                             Icons.delete_outline,
@@ -260,34 +323,31 @@ class CartScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFAFAFA),
-                        border: Border.all(color: const Color(0xFFDDDDDD)),
+                        color: theme.colorScheme.surface,
+                        border: Border.all(
+                            color: isDark
+                                ? Colors.grey[800]!
+                                : const Color(0xFFDDDDDD)),
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Color(0x3F000000),
+                            color: isDark
+                                ? Colors.black.withAlpha((0.13 * 255).toInt())
+                                : const Color(0x3F000000),
                             blurRadius: 4,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          buildSummaryLine('عدد المنتجات :', '$totalItems'),
-                          buildSummaryLine(
-                            'مجموع المنتجات :',
-                            '$totalPrice د.ع',
-                          ),
-                          buildSummaryLine(
-                            'التوصيل :',
-                            deliveryFee == 0 ? 'مجاناً' : '$deliveryFee د.ع',
-                          ),
-                          buildSummaryLine(
-                            'الاجمالي :',
-                            '$grandTotal د.ع',
-                            isTotal: true,
-                          ),
+                          buildSummaryLine(theme, 'عدد المنتجات :', '$totalItems'),
+                          buildSummaryLine(theme, 'مجموع المنتجات :', '$totalPrice د.ع'),
+                          buildSummaryLine(theme, 'التوصيل :',
+                              deliveryFee == 0 ? 'مجاناً' : '$deliveryFee د.ع'),
+                          buildSummaryLine(theme, 'الاجمالي :', '$grandTotal د.ع',
+                              isTotal: true),
                         ],
                       ),
                     ),
@@ -303,7 +363,18 @@ class CartScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          Navigator.pushNamed(context, '/confirm-order');
+                          if (selectedAddress != null) {
+                            context.read<CartBloc>().add(
+                                  SelectAddress(selectedAddress!['label']),
+                                );
+                            context.push('/confirm-order');
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('يرجى اختيار عنوان أولاً'),
+                              ),
+                            );
+                          }
                         },
                         child: const Text(
                           'اتمام الدفع',
@@ -325,7 +396,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildColorCircle(String colorName) {
+  Widget _buildColorCircle(String colorName, ThemeData theme) {
     final color = _getColorFromName(colorName);
     return Container(
       width: 18,
@@ -333,18 +404,23 @@ class CartScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.black26),
+        border: Border.all(color: theme.dividerColor),
       ),
     );
   }
 
-  Widget _buildCircleButton(String symbol, VoidCallback onPressed) {
+  // هنا التعديل المطلوب
+  Widget _buildCircleButton(String symbol, VoidCallback onPressed, ThemeData theme) {
+    final Color btnColor = symbol == '+'
+        ? const Color(0xFF546E7A)
+        : const Color(0xFF29434E);
+
     return Container(
       width: 32,
       height: 32,
       margin: const EdgeInsets.symmetric(horizontal: 2),
-      decoration: const BoxDecoration(
-        color: Color(0xFF546E7A),
+      decoration: BoxDecoration(
+        color: btnColor,
         shape: BoxShape.circle,
       ),
       child: IconButton(
@@ -358,7 +434,7 @@ class CartScreen extends StatelessWidget {
     );
   }
 
-  Widget buildSummaryLine(String label, String value, {bool isTotal = false}) {
+  Widget buildSummaryLine(ThemeData theme, String label, String value, {bool isTotal = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Text.rich(
@@ -366,18 +442,20 @@ class CartScreen extends StatelessWidget {
           children: [
             TextSpan(
               text: '$label ',
-              style: TextStyle(
-                color:
-                    isTotal ? const Color(0xFF2E7D32) : const Color(0xFF333333),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: isTotal
+                    ? Colors.green
+                    : theme.textTheme.bodyLarge?.color,
                 fontSize: 16,
                 fontFamily: 'Cairo',
               ),
             ),
             TextSpan(
               text: value,
-              style: TextStyle(
-                color:
-                    isTotal ? const Color(0xFF2E7D32) : const Color(0xFF757575),
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: isTotal
+                    ? Colors.green
+                    : theme.textTheme.bodySmall?.color,
                 fontSize: 16,
                 fontFamily: 'Cairo',
               ),

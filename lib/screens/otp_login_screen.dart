@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+
 import '../services/api_service_dio.dart';
 import '../widgets/back_button_custom.dart';
 
@@ -20,8 +22,13 @@ final logger = Logger(
 
 class OtpLoginScreen extends StatefulWidget {
   final String phoneNumber;
+  final bool isChangePhone;
 
-  const OtpLoginScreen({super.key, required this.phoneNumber});
+  const OtpLoginScreen({
+    super.key,
+    required this.phoneNumber,
+    this.isChangePhone = false,
+  });
 
   @override
   State<OtpLoginScreen> createState() => _OtpLoginScreenState();
@@ -47,9 +54,7 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
   String _normalizePhone(String raw) {
     String phone = raw.trim();
     if (phone.startsWith('+964')) return phone;
-    if (phone.startsWith('0')) {
-      phone = phone.substring(1);
-    }
+    if (phone.startsWith('0')) phone = phone.substring(1);
     return '+964$phone';
   }
 
@@ -76,13 +81,9 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (seconds == 0) {
         timer.cancel();
-        setState(() {
-          canResend = true;
-        });
+        setState(() => canResend = true);
       } else {
-        setState(() {
-          seconds--;
-        });
+        setState(() => seconds--);
       }
     });
   }
@@ -102,27 +103,51 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
     setState(() => isVerifying = true);
 
     try {
-      final result = await ApiServiceDio.verifyOtp(
-        phone: formattedPhone,
-        code: enteredOtp,
-      );
+      if (widget.isChangePhone) {
+        await ApiServiceDio.verifyOtpChangePhone(
+          phone: formattedPhone,
+          code: enteredOtp,
+        );
+        await ApiServiceDio.updatePhone(formattedPhone);
 
-      final token = result['token'];
-      if (token == null || token is! String) {
-        throw Exception('فشل في استلام التوكن من السيرفر');
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userPhone', formattedPhone);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("تم تغيير رقم الهاتف بنجاح")),
+          );
+          context.go('/profile');
+        }
+      } else {
+        final result = await ApiServiceDio.verifyOtp(
+          phone: formattedPhone,
+          code: enteredOtp,
+        );
+
+        final token = result['token'];
+        if (token == null || token is! String) {
+          throw Exception('فشل في استلام التوكن من السيرفر');
+        }
+
+        final user = result['user'];
+        if (user == null || user is! Map<String, dynamic>) {
+          throw Exception('بيانات المستخدم غير صالحة');
+        }
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        await prefs.setString('userId', user['_id']);
+        await prefs.setString('userName', user['name']);
+        await prefs.setString('userPhone', user['phone']);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("تم التحقق من الرقم بنجاح")),
+          );
+          context.go('/');
+        }
       }
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      await prefs.setString('userId', result['user']['_id']);
-      logger.i("✅ userId saved: ${result['user']['_id']}");
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("تم التحقق من الرقم بنجاح")),
-      );
-
-      Navigator.pushReplacementNamed(context, '/home');
     } catch (e) {
       logger.e('خطأ في التحقق: $e');
       if (!mounted) return;
@@ -134,11 +159,13 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         displayMessage = 'رمز التحقق غير صحيح';
       } else if (errorMessage.contains('انتهت صلاحية الرمز')) {
         displayMessage = 'انتهت صلاحية الرمز أو غير موجود';
+      } else if (errorMessage.contains('الحساب غير موجود')) {
+        displayMessage = 'الحساب غير موجود، يرجى التسجيل أولاً';
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(displayMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(displayMessage)));
     } finally {
       if (mounted) setState(() => isVerifying = false);
     }
@@ -152,9 +179,13 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final primaryColor = const Color(0xFF546E7A);
+    final cardColor = theme.cardColor;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -170,17 +201,25 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   fontSize: 80,
                   fontStyle: FontStyle.italic,
                   color: primaryColor,
+                  fontFamily: 'Poppins',
                 ),
               ),
               const SizedBox(height: 80),
-              const Text(
+              Text(
                 'أدخل رمز التحقق المرسل إلى رقم هاتفك',
-                style: TextStyle(fontSize: 16),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  color: theme.textTheme.bodyLarge?.color,
+                ),
                 textAlign: TextAlign.center,
               ),
               Text(
                 formattedPhone,
-                style: const TextStyle(color: Colors.grey),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey,
+                  fontFamily: 'Cairo',
+                ),
               ),
               const SizedBox(height: 24),
               PinCodeTextField(
@@ -195,28 +234,34 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                   borderRadius: BorderRadius.circular(8),
                   fieldHeight: 50,
                   fieldWidth: 45,
-                  inactiveColor: Colors.grey.shade300,
+                  inactiveColor:
+                      isDark ? Colors.grey[700]! : Colors.grey.shade300,
                   activeColor: primaryColor,
                   selectedColor: primaryColor,
+                  activeFillColor: cardColor,
+                  inactiveFillColor: cardColor,
+                  selectedFillColor: cardColor,
                 ),
                 onChanged: (_) {},
+                backgroundColor: Colors.transparent,
+                enableActiveFill: true,
               ),
               const SizedBox(height: 16),
               canResend
                   ? TextButton(
-                      onPressed: () {
-                        _sendOtp();
-                        _startTimer();
-                      },
-                      child: const Text(
-                        'إعادة إرسال الرمز',
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    )
-                  : Text(
-                      'إعادة إرسال الرمز خلال $seconds ثانية',
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    onPressed: () {
+                      _sendOtp();
+                      _startTimer();
+                    },
+                    child: const Text(
+                      'إعادة إرسال الرمز',
+                      style: TextStyle(color: Colors.blue),
                     ),
+                  )
+                  : Text(
+                    'إعادة إرسال الرمز خلال $seconds ثانية',
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: isVerifying ? null : _verifyOtp,
@@ -227,12 +272,17 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: isVerifying
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'تأكيد',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                child:
+                    isVerifying
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                          'تأكيد',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontFamily: 'Cairo',
+                          ),
+                        ),
               ),
             ],
           ),

@@ -4,6 +4,9 @@ import '../models/product_model.dart';
 import '../blocs/cart/cart_bloc.dart';
 import '../blocs/cart/cart_event.dart';
 import '../widgets/back_button_custom.dart';
+import '../blocs/favorite/favorite_bloc.dart';
+import '../blocs/favorite/favorite_event.dart';
+import '../blocs/favorite/favorite_state.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final ProductModel product;
@@ -39,12 +42,18 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    // الألوان الموحدة
     final primaryColor = const Color(0xFF546E7A);
+    final background = theme.scaffoldBackgroundColor;
+    final cardColor = theme.cardColor;
+    final textColor = isDark ? Colors.grey[100] : const Color(0xFF29434E);
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: background,
         body: SafeArea(
           child: Stack(
             children: [
@@ -52,12 +61,12 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: Column(
                   children: [
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       child: BackButtonCustom(title: 'تفاصيل المنتج'),
-
                     ),
-
-                    // ✅ صور المنتج
                     SizedBox(
                       height: 400,
                       width: double.infinity,
@@ -66,100 +75,148 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         reverse: true,
                         itemCount: widget.product.images.length,
                         itemBuilder: (context, index) {
-                          return Image.network(
-                            widget.product.images[index],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.broken_image),
+                          return KeyedSubtree(
+                            key: ValueKey('${widget.product.id}-$index'),
+                            child: BlocBuilder<FavoriteBloc, FavoriteState>(
+                              builder: (context, favState) {
+                                final isFav = favState.favoriteProductIds
+                                    .contains(widget.product.id);
+                                return Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: Container(
+                                        color: cardColor,
+                                        child: Image.network(
+                                          widget.product.images[index],
+                                          fit: BoxFit.cover,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  Icon(
+                                                    Icons.broken_image,
+                                                    color:
+                                                        isDark
+                                                            ? Colors.white24
+                                                            : Colors.black26,
+                                                  ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 12,
+                                      left: 12,
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          context.read<FavoriteBloc>().add(
+                                            ToggleFavorite(widget.product.id),
+                                          );
+                                        },
+                                        child: Icon(
+                                          isFav
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color:
+                                              isFav
+                                                  ? primaryColor
+                                                  : (isDark
+                                                      ? Colors.grey[600]
+                                                      : Colors.grey),
+                                          size: 28,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
                           );
                         },
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
-                    // ✅ مؤشرات الصور
                     ValueListenableBuilder<int>(
                       valueListenable: _currentPage,
                       builder: (context, currentPage, _) {
                         return Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(widget.product.images.length, (index) {
-                            final dotIndex = widget.product.images.length - index - 1;
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: currentPage == dotIndex
-                                    ? primaryColor
-                                    : Colors.grey[300],
-                              ),
-                            );
-                          }),
+                          children: List.generate(
+                            widget.product.images.length,
+                            (index) {
+                              final dotIndex =
+                                  widget.product.images.length - index - 1;
+                              return Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color:
+                                      currentPage == dotIndex
+                                          ? primaryColor
+                                          : (isDark
+                                              ? Colors.grey[700]
+                                              : Colors.grey[300]),
+                                ),
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
-
                     const SizedBox(height: 20),
-
-                    // ✅ الاسم والسعر
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // اسم المنتج بنفس لون السعر، لكن يستجيب للثيم
                           Text(
                             widget.product.name,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Cairo',
-                              color: Color(0xFF333333),
+                              color: textColor,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             '${widget.product.price} د.ع',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 18,
                               fontFamily: 'Cairo',
-                              color: Color(0xFF29434E),
+                              color: textColor,
                             ),
                           ),
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // ✅ تفاصيل المنتج
-                    _buildSectionTitle('تفاصيل المنتج:'),
+                    _buildSectionTitle('تفاصيل المنتج:', isDark),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         'هذا المنتج من ضمن تشكيلتنا الجديدة المميزة.\nالخامة عالية الجودة، ويدعم خيارات متعددة من المقاسات والألوان.',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontFamily: 'Cairo',
-                          color: Color(0xFF666666),
+                          color:
+                              isDark
+                                  ? Colors.grey[300]
+                                  : const Color(0xFF666666),
                           height: 1.5,
                         ),
                         textAlign: TextAlign.right,
                       ),
                     ),
-
                     const SizedBox(height: 24),
-                    _buildSectionTitle('اختر القياس'),
-                    _buildSizeOptions(primaryColor),
-
+                    _buildSectionTitle('اختر القياس', isDark),
+                    _buildSizeOptions(primaryColor, isDark),
                     const SizedBox(height: 16),
-                    _buildSectionTitle('اختر اللون'),
-                    _buildColorOptions(primaryColor),
-
+                    _buildSectionTitle('اختر اللون', isDark),
+                    _buildColorOptions(primaryColor, isDark),
                     const SizedBox(height: 40),
-
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: SizedBox(
@@ -184,7 +241,6 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -196,68 +252,77 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Align(
         alignment: Alignment.centerRight,
         child: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontFamily: 'Cairo',
-            color: Color(0xFF333333),
+            color: isDark ? Colors.grey[200] : const Color(0xFF333333),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSizeOptions(Color primaryColor) {
+  Widget _buildSizeOptions(Color primaryColor, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Wrap(
         spacing: 8,
-        children: widget.product.sizes.map((size) {
-          final isSelected = selectedSize == size;
-          return ChoiceChip(
-            label: Text(size),
-            selected: isSelected,
-            onSelected: (_) => setState(() => selectedSize = size),
-            selectedColor: primaryColor,
-            backgroundColor: const Color(0xFFEEEEEE),
-            labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.black,
-            ),
-          );
-        }).toList(),
+        children:
+            widget.product.sizes.map((size) {
+              final isSelected = selectedSize == size;
+              return ChoiceChip(
+                label: Text(size),
+                selected: isSelected,
+                onSelected: (_) => setState(() => selectedSize = size),
+                selectedColor: primaryColor,
+                backgroundColor:
+                    isDark ? Colors.grey[850] : const Color(0xFFEEEEEE),
+                labelStyle: TextStyle(
+                  color:
+                      isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.grey[200] : Colors.black),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
 
-  Widget _buildColorOptions(Color primaryColor) {
+  Widget _buildColorOptions(Color primaryColor, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Wrap(
         spacing: 8,
-        children: widget.product.colors.map((color) {
-          final isSelected = selectedColor == color;
-          return GestureDetector(
-            onTap: () => setState(() => selectedColor = color),
-            child: Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: _getColorFromName(color),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? primaryColor : Colors.grey,
-                  width: 2,
+        children:
+            widget.product.colors.map((color) {
+              final isSelected = selectedColor == color;
+              return GestureDetector(
+                onTap: () => setState(() => selectedColor = color),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: _getColorFromName(color),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color:
+                          isSelected
+                              ? primaryColor
+                              : (isDark ? Colors.grey : Colors.grey[400]!),
+                      width: 2,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
@@ -278,9 +343,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       ),
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("تمت إضافة المنتج إلى السلة")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("تمت إضافة المنتج إلى السلة")));
   }
 
   Color _getColorFromName(String name) {

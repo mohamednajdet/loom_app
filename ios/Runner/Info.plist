@@ -45,5 +45,18 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- ✅ Mapbox Access Token -->
+	<key>MGLMapboxAccessToken</key>
+	<string>sk.eyJ1IjoibW9oYW1tZWRuYWpkZXQiLCJhIjoiY21ibjh1eHBkMTdzbTJrcXkyaXlxazBobyJ9.3JNvX0rIms_qXlt6jNTOQA</string>
+
+	<!-- ✅ Location Permissions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>نحتاج موقعك لعرض الخريطة بدقة</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>نحتاج موقعك حتى بالخلفية</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>نحتاج الموقع لعرض موقعك على الخريطة</string>
+
 </dict>
 </plist>

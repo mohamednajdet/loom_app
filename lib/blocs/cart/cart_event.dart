@@ -69,3 +69,12 @@ class DecreaseQuantity extends CartEvent {
   @override
   List<Object?> get props => [product, selectedSize, selectedColor];
 }
+
+class SelectAddress extends CartEvent {
+  final String addressLabel;
+
+  const SelectAddress(this.addressLabel);
+
+  @override
+  List<Object?> get props => [addressLabel];
+}

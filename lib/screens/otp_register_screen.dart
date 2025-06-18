@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:logger/logger.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
+
 import '../services/api_service_dio.dart';
 import '../widgets/back_button_custom.dart';
 
@@ -127,7 +129,8 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
         const SnackBar(content: Text("تم إنشاء الحساب بنجاح")),
       );
 
-      Navigator.pushReplacementNamed(context, '/home');
+      context.go('/'); // ✅ التعديل هنا
+
     } catch (e) {
       logger.e("فشل في التحقق من الرمز أو إنشاء الحساب: $e");
       if (!mounted) return;
@@ -159,9 +162,13 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final primaryColor = const Color(0xFF546E7A);
+    final cardColor = theme.cardColor;
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -177,17 +184,25 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
                   fontSize: 80,
                   fontStyle: FontStyle.italic,
                   color: primaryColor,
+                  fontFamily: 'Poppins',
                 ),
               ),
               const SizedBox(height: 80),
-              const Text(
+              Text(
                 'أدخل رمز التحقق المرسل إلى رقم هاتفك',
-                style: TextStyle(fontSize: 16),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontFamily: 'Cairo',
+                  fontSize: 16,
+                  color: theme.textTheme.bodyLarge?.color,
+                ),
                 textAlign: TextAlign.center,
               ),
               Text(
                 formattedPhone,
-                style: const TextStyle(color: Colors.grey),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey,
+                  fontFamily: 'Cairo',
+                ),
               ),
               const SizedBox(height: 24),
               PinCodeTextField(
@@ -202,11 +217,16 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
                   borderRadius: BorderRadius.circular(8),
                   fieldHeight: 50,
                   fieldWidth: 45,
-                  inactiveColor: Colors.grey.shade300,
+                  inactiveColor: isDark ? Colors.grey[700]! : Colors.grey.shade300,
                   activeColor: primaryColor,
                   selectedColor: primaryColor,
+                  activeFillColor: cardColor,
+                  inactiveFillColor: cardColor,
+                  selectedFillColor: cardColor,
                 ),
                 onChanged: (_) {},
+                backgroundColor: Colors.transparent,
+                enableActiveFill: true,
               ),
               const SizedBox(height: 16),
               canResend
@@ -238,7 +258,7 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         'تأكيد',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        style: TextStyle(fontSize: 16, color: Colors.white, fontFamily: 'Cairo'),
                       ),
               ),
             ],

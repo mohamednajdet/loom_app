@@ -38,15 +38,25 @@ class CartItem extends Equatable {
 
 class CartState extends Equatable {
   final List<CartItem> items;
+  final String? selectedAddressLabel; // 🆕 العنوان المختار
 
-  const CartState({this.items = const []});
+  const CartState({
+    this.items = const [],
+    this.selectedAddressLabel,
+  });
 
-  CartState copyWith({List<CartItem>? items}) {
-    return CartState(items: items ?? this.items);
+  CartState copyWith({
+    List<CartItem>? items,
+    String? selectedAddressLabel,
+  }) {
+    return CartState(
+      items: items ?? this.items,
+      selectedAddressLabel: selectedAddressLabel ?? this.selectedAddressLabel,
+    );
   }
 
   List<CartItem> get cartItems => items;
 
   @override
-  List<Object?> get props => [items];
+  List<Object?> get props => [items, selectedAddressLabel];
 }

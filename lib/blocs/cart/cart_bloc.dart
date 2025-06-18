@@ -9,6 +9,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<ClearCart>(_onClearCart);
     on<IncreaseQuantity>(_onIncreaseQuantity);
     on<DecreaseQuantity>(_onDecreaseQuantity);
+    on<SelectAddress>(_onSelectAddress); // ✅ دعم اختيار العنوان
   }
 
   void _onAddToCart(AddToCart event, Emitter<CartState> emit) {
@@ -48,7 +49,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onClearCart(ClearCart event, Emitter<CartState> emit) {
-    emit(const CartState(items: []));
+    emit(state.copyWith(items: []));
   }
 
   void _onIncreaseQuantity(IncreaseQuantity event, Emitter<CartState> emit) {
@@ -76,5 +77,9 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }).toList();
 
     emit(state.copyWith(items: updatedItems));
+  }
+
+  void _onSelectAddress(SelectAddress event, Emitter<CartState> emit) {
+    emit(state.copyWith(selectedAddressLabel: event.addressLabel));
   }
 }
