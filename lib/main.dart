@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'package:firebase_core/firebase_core.dart'; // ← الجديد
+import 'services/firebase_messaging_helper.dart'; // ← استدعاء الكلاس الجديد
 
 // BLoC
 import 'blocs/home/home_bloc.dart';
@@ -10,7 +12,7 @@ import 'blocs/home/home_event.dart';
 import 'blocs/cart/cart_bloc.dart';
 import 'blocs/favorite/favorite_bloc.dart';
 import 'blocs/favorite/favorite_event.dart';
-import 'blocs/theme_cubit.dart'; // ✅ Bloc الثيم
+import 'blocs/theme_cubit.dart';
 
 // الشاشات
 import 'screens/splash_screen.dart';
@@ -32,12 +34,20 @@ import 'screens/about_loom_screen.dart';
 import 'screens/wishlist_screen.dart';
 import 'screens/dark_mode_toggle_screen.dart';
 import 'screens/delete_account_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/notifications_settings_screen.dart';
 // الموديلات
 import 'models/product_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // ✅ تهيئة Firebase
+  await Firebase.initializeApp();
+
+  // ✅ تهيئة Firebase Messaging (إشعارات FCM)
+  await FirebaseMessagingHelper.initFCM();
 
   MapboxOptions.setAccessToken(
     'pk.eyJ1IjoibW9oYW1tZWRuYWpkZXQiLCJhIjoiY21ibjJ3a3dqMWlrOTJqcjFpbGtrNjNxZyJ9.b3W25F4loDoXLZC59uEoqA',
@@ -49,9 +59,9 @@ void main() async {
 final GoRouter _router = GoRouter(
   initialLocation: '/splash',
   routes: [
-    GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
-    GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-    GoRoute(path: '/signup', builder: (_, __) => const SignUpScreen()),
+    GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
+    GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+    GoRoute(path: '/signup', builder: (_, _) => const SignUpScreen()),
     GoRoute(
       path: '/otp-register',
       builder: (context, state) {
@@ -70,8 +80,8 @@ final GoRouter _router = GoRouter(
         return OtpLoginScreen(phoneNumber: phoneNumber);
       },
     ),
-    GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
-    GoRoute(path: '/cart', builder: (_, __) => const CartScreen()),
+    GoRoute(path: '/', builder: (_, _) => const HomeScreen()),
+    GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
     GoRoute(
       path: '/product-details',
       builder: (context, state) {
@@ -79,17 +89,40 @@ final GoRouter _router = GoRouter(
         return ProductDetailsScreen(product: product);
       },
     ),
-    GoRoute(path: '/confirm-order', builder: (_, __) => const CheckoutScreen()),
-    GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-    GoRoute(path: '/saved_addresses', builder: (_, __) => const SavedAddressesScreen()),
-    GoRoute(path: '/change_phone', builder: (_, __) => const ChangePhoneNumberScreen()),
-    GoRoute(path: '/map-picker', builder: (_, __) => const MapPickerScreen()),
-    GoRoute(path: '/feedback', builder: (_, __) => const FeedbackSuggestionsScreen()),
-    GoRoute(path: '/surveys', builder: (_, __) => const SurveysScreen()),
-    GoRoute(path: '/about-loom', builder: (_, __) => const AboutLoomScreen()),
-    GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen()),
-    GoRoute(path: '/dark-mode-toggle', builder: (_, __) => const DarkModeToggleScreen()),
-    GoRoute(path: '/delete_account', builder: (context, state) => const DeleteAccountScreen()),
+    GoRoute(path: '/confirm-order', builder: (_, _) => const CheckoutScreen()),
+    GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+    GoRoute(
+      path: '/saved_addresses',
+      builder: (_, _) => const SavedAddressesScreen(),
+    ),
+    GoRoute(
+      path: '/change_phone',
+      builder: (_, _) => const ChangePhoneNumberScreen(),
+    ),
+    GoRoute(path: '/map-picker', builder: (_, _) => const MapPickerScreen()),
+    GoRoute(
+      path: '/feedback',
+      builder: (_, _) => const FeedbackSuggestionsScreen(),
+    ),
+    GoRoute(path: '/surveys', builder: (_, _) => const SurveysScreen()),
+    GoRoute(path: '/about-loom', builder: (_, _) => const AboutLoomScreen()),
+    GoRoute(path: '/wishlist', builder: (_, _) => const WishlistScreen()),
+    GoRoute(
+      path: '/dark-mode-toggle',
+      builder: (_, _) => const DarkModeToggleScreen(),
+    ),
+    GoRoute(
+      path: '/delete_account',
+      builder: (context, state) => const DeleteAccountScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/notifications_settings',
+      builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
   ],
 );
 
@@ -113,7 +146,9 @@ class MyApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               home: Scaffold(
                 backgroundColor: Color(0xFF546E7A),
-                body: Center(child: CircularProgressIndicator(color: Colors.white)),
+                body: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                ),
               ),
             );
           }

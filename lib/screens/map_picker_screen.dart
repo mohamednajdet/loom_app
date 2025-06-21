@@ -3,7 +3,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:go_router/go_router.dart'; // ✅ إضافة
+import 'package:go_router/go_router.dart';
 
 class MapPickerScreen extends StatefulWidget {
   const MapPickerScreen({super.key});
@@ -13,19 +13,20 @@ class MapPickerScreen extends StatefulWidget {
 }
 
 class _MapPickerScreenState extends State<MapPickerScreen> {
-  late MapboxMap _mapboxMap;
+  MapboxMap? _mapboxMap;
   final _logger = Logger();
   final TextEditingController _searchController = TextEditingController();
 
-  Point _selectedPoint = Point(
-    coordinates: Position(44.3661, 33.3152),
-  ); // بغداد
-  bool _gpsChecked = false;
+  late CameraOptions _initialCamera;
   List<dynamic> _suggestions = [];
 
   @override
   void initState() {
     super.initState();
+    _initialCamera = CameraOptions(
+      center: Point(coordinates: Position(44.3661, 33.3152)), // بغداد
+      zoom: 14,
+    );
     _getUserLocation();
   }
 
@@ -42,22 +43,24 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
       }
 
       final current = await geo.Geolocator.getCurrentPosition();
-      final newPoint = Point(
-        coordinates: Position(current.longitude, current.latitude),
+      final newCamera = CameraOptions(
+        center: Point(
+          coordinates: Position(current.longitude, current.latitude),
+        ),
+        zoom: 15,
       );
 
+      if (_mapboxMap != null) {
+        await _mapboxMap!.flyTo(newCamera, MapAnimationOptions(duration: 1000));
+      }
       if (mounted) {
         setState(() {
-          _selectedPoint = newPoint;
-          _gpsChecked = true;
+          _initialCamera = newCamera;
         });
-
-        _mapboxMap.flyTo(
-          CameraOptions(center: newPoint, zoom: 15),
-          MapAnimationOptions(duration: 1000),
-        );
       }
-    } catch (_) {}
+    } catch (e) {
+      _logger.e('❌ خطأ أثناء جلب الموقع', error: e);
+    }
   }
 
   Future<void> _searchSuggestions(String query) async {
@@ -69,7 +72,6 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     try {
       final url =
           'https://api.mapbox.com/geocoding/v5/mapbox.places/$query.json?access_token=pk.eyJ1IjoibW9oYW1tZWRuYWpkZXQiLCJhIjoiY21ibjJ3a3dqMWlrOTJqcjFpbGtrNjNxZyJ9.b3W25F4loDoXLZC59uEoqA';
-
       final dio = Dio();
       final response = await dio.get(url);
 
@@ -82,29 +84,30 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
     }
   }
 
-  void _selectSuggestion(dynamic feature) {
+  void _selectSuggestion(dynamic feature) async {
     final coords = feature['center'];
     final lng = coords[0];
     final lat = coords[1];
 
-    final point = Point(coordinates: Position(lng, lat));
+    final camera = CameraOptions(
+      center: Point(coordinates: Position(lng, lat)),
+      zoom: 15,
+    );
+
+    if (_mapboxMap != null) {
+      await _mapboxMap!.flyTo(camera, MapAnimationOptions(duration: 1000));
+    }
     setState(() {
-      _selectedPoint = point;
+      _initialCamera = camera;
       _suggestions = [];
       _searchController.clear();
     });
-
-    _mapboxMap.flyTo(
-      CameraOptions(center: point, zoom: 15),
-      MapAnimationOptions(duration: 1000),
-    );
   }
 
   Future<String> getPlaceNameFromLatLng(double lat, double lng) async {
     try {
       final url =
           'https://api.mapbox.com/geocoding/v5/mapbox.places/$lng,$lat.json?access_token=pk.eyJ1IjoibW9oYW1tZWRuYWpkZXQiLCJhIjoiY21ibjJ3a3dqMWlrOTJqcjFpbGtrNjNxZyJ9.b3W25F4loDoXLZC59uEoqA';
-
       final response = await Dio().get(url);
       final features = response.data['features'];
 
@@ -121,6 +124,8 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -128,26 +133,18 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             key: const ValueKey("mapWidget"),
             styleUri: MapboxStyles.MAPBOX_STREETS,
             textureView: true,
-            cameraOptions: CameraOptions(center: _selectedPoint, zoom: 14),
-            onMapCreated: (controller) {
-              _mapboxMap = controller;
-
-              _mapboxMap.addListener(() async {
-                final state = await _mapboxMap.getCameraState();
-                setState(() {
-                  _selectedPoint = state.center;
-                });
-              });
-
-              if (!_gpsChecked) _getUserLocation();
+            cameraOptions: _initialCamera,
+            onMapCreated: (map) {
+              _mapboxMap = map;
             },
           ),
 
+          // أيقونة المؤشر
           const Center(
             child: Icon(Icons.location_pin, size: 40, color: Color(0xFF546E7A)),
           ),
 
-          // 🔍 حقل البحث + الاقتراحات
+          // حقل البحث والاقتراحات
           Positioned(
             top: 40,
             left: 16,
@@ -157,7 +154,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: isDark ? Colors.grey[900] : Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
@@ -170,10 +167,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                   child: TextField(
                     controller: _searchController,
                     onChanged: _searchSuggestions,
-                    decoration: const InputDecoration(
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                    decoration: InputDecoration(
                       hintText: 'اكتب العنوان هنا...',
+                      hintStyle: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.grey,
+                      ),
                       border: InputBorder.none,
-                      icon: Icon(Icons.search, color: Color(0xFF546E7A)),
+                      icon: const Icon(Icons.search, color: Color(0xFF546E7A)),
                     ),
                   ),
                 ),
@@ -182,7 +185,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: isDark ? Colors.grey[900] : Colors.white,
                       borderRadius: BorderRadius.circular(6),
                       boxShadow: [
                         BoxShadow(
@@ -198,7 +201,12 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                       itemBuilder: (context, index) {
                         final item = _suggestions[index];
                         return ListTile(
-                          title: Text(item['place_name'] ?? ''),
+                          title: Text(
+                            item['place_name'] ?? '',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                            ),
+                          ),
                           onTap: () => _selectSuggestion(item),
                         );
                       },
@@ -208,7 +216,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ),
           ),
 
-          // ✅ زر تحديد الموقع (GPS)
+          // زر تحديد الموقع GPS
           Positioned(
             bottom: 80,
             right: 20,
@@ -219,7 +227,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
             ),
           ),
 
-          // ✅ أزرار تأكيد وإلغاء
+          // زر التأكيد/الإلغاء
           Positioned(
             bottom: 20,
             left: 16,
@@ -228,7 +236,7 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () => context.pop(), // ✅ إلغاء
+                    onPressed: () => context.pop(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF29434E),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -246,14 +254,16 @@ class _MapPickerScreenState extends State<MapPickerScreen> {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      final cameraState = await _mapboxMap.getCameraState();
-                      final double lat =
-                          cameraState.center.coordinates.lat.toDouble();
-                      final double lng =
-                          cameraState.center.coordinates.lng.toDouble();
+                      if (_mapboxMap == null) return;
+                      final cameraState = await _mapboxMap!.getCameraState();
+                      final center = cameraState.center; // بدون as Point
+                      final double lat = center.coordinates.lat.toDouble();
+                      final double lng = center.coordinates.lng.toDouble();
                       final label = await getPlaceNameFromLatLng(lat, lng);
 
-                      if (!mounted) return;
+                      if (!mounted) {
+                        return;
+                      }
                       // ignore: use_build_context_synchronously
                       context.pop({'lat': lat, 'lng': lng, 'label': label});
                     },

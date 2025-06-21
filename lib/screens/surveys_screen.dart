@@ -127,7 +127,7 @@ class _SurveysScreenState extends State<SurveysScreen> {
               Expanded(
                 child: ListView.separated(
                   itemCount: questions.length + 1,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  separatorBuilder: (_,_) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     if (index < questions.length) {
                       final q = questions[index];

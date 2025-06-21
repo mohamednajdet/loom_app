@@ -23,6 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
     _navigateAfterDelay();
   }
 
+  // أنميشن الطباعة الحرفية لكلمة loom
   void _startTypewriter() {
     _typewriterTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
       if (_charIndex < _fullText.length) {
@@ -36,10 +37,11 @@ class _SplashScreenState extends State<SplashScreen> {
     });
   }
 
+  // الانتقال التلقائي بعد الأنميشن حسب حالة المستخدم (مسجل دخول أو لا)
   Future<void> _navigateAfterDelay() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    // وقت الانتقال: طول الأنميشن + انتظار إضافي بسيط
+    // مدة الأنميشن + هامش انتظار إضافي
     await Future.delayed(Duration(milliseconds: 150 * _fullText.length + 600));
     if (!mounted) return;
     if (token != null && token.isNotEmpty) {

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/api_service_dio.dart';
+import '../services/firebase_messaging_helper.dart';
 import '../widgets/back_button_custom.dart';
 
 final logger = Logger(
@@ -124,12 +125,18 @@ class _OtpRegisterScreenState extends State<OtpRegisterScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
 
+      // ✅ إرسال FCM Token بعد إنشاء الحساب
+      final fcmToken = await FirebaseMessagingHelper.getFcmToken();
+      if (fcmToken != null) {
+        await ApiServiceDio.updateFcmToken(fcmToken);
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("تم إنشاء الحساب بنجاح")),
       );
 
-      context.go('/'); // ✅ التعديل هنا
+      context.go('/');
 
     } catch (e) {
       logger.e("فشل في التحقق من الرمز أو إنشاء الحساب: $e");

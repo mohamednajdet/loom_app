@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "240945170996",
+    "project_id": "loom-2c4d1",
+    "storage_bucket": "loom-2c4d1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:240945170996:android:c96ccf2a57785e4aaad861",
+        "android_client_info": {
+          "package_name": "com.example.loom_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtb8Bah7nJG06hCqS4HPDNlJlGHY1P0WM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

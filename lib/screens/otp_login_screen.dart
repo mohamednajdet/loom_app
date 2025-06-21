@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 
 import '../services/api_service_dio.dart';
+import '../services/firebase_messaging_helper.dart';
 import '../widgets/back_button_custom.dart';
 
 final logger = Logger(
@@ -141,6 +142,12 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
         await prefs.setString('userName', user['name']);
         await prefs.setString('userPhone', user['phone']);
 
+        // ✅ تسجيل FCM Token بعد أول دخول
+        final fcmToken = await FirebaseMessagingHelper.getFcmToken();
+        if (fcmToken != null) {
+          await ApiServiceDio.updateFcmToken(fcmToken);
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("تم التحقق من الرقم بنجاح")),
@@ -249,19 +256,19 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
               const SizedBox(height: 16),
               canResend
                   ? TextButton(
-                    onPressed: () {
-                      _sendOtp();
-                      _startTimer();
-                    },
-                    child: const Text(
-                      'إعادة إرسال الرمز',
-                      style: TextStyle(color: Colors.blue),
-                    ),
-                  )
+                      onPressed: () {
+                        _sendOtp();
+                        _startTimer();
+                      },
+                      child: const Text(
+                        'إعادة إرسال الرمز',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    )
                   : Text(
-                    'إعادة إرسال الرمز خلال $seconds ثانية',
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
+                      'إعادة إرسال الرمز خلال $seconds ثانية',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: isVerifying ? null : _verifyOtp,
@@ -272,17 +279,16 @@ class _OtpLoginScreenState extends State<OtpLoginScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child:
-                    isVerifying
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                          'تأكيد',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontFamily: 'Cairo',
-                          ),
+                child: isVerifying
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'تأكيد',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontFamily: 'Cairo',
                         ),
+                      ),
               ),
             ],
           ),

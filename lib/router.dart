@@ -19,7 +19,8 @@ import 'screens/about_loom_screen.dart'; // شاشة عن لووم
 import 'screens/wishlist_screen.dart'; // ✅ شاشة المفضلات
 import 'screens/dark_mode_toggle_screen.dart';
 import 'screens/delete_account_screen.dart';
-
+import 'screens/notifications_screen.dart';
+import 'screens/notifications_settings_screen.dart';
 
 // الموديلات
 import 'models/product_model.dart';
@@ -61,15 +62,53 @@ final GoRouter router = GoRouter(
     ),
 
     GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
-    GoRoute(path: '/confirm-order', builder: (context, state) => const CheckoutScreen()),
-    GoRoute(path: '/profile', builder: (context, state) => const ProfileScreen()),
-    GoRoute(path: '/saved_addresses', builder: (context, state) => const SavedAddressesScreen()),
-    GoRoute(path: '/change_phone', builder: (context, state) => const ChangePhoneNumberScreen()),
-    GoRoute(path: '/map-picker', builder: (context, state) => const MapPickerScreen()),
-    GoRoute(path: '/feedback', builder: (context, state) => const FeedbackSuggestionsScreen()),
-    GoRoute(path: '/about-loom', builder: (context, state) => const AboutLoomScreen()),
-    GoRoute(path: '/wishlist', builder: (context, state) => const WishlistScreen()),
-    GoRoute(path: '/dark-mode-toggle', builder: (context, state) => const DarkModeToggleScreen()),
-    GoRoute(path: '/delete_account', builder: (context, state) => const DeleteAccountScreen()),
+    GoRoute(
+      path: '/confirm-order',
+      builder: (context, state) => const CheckoutScreen(),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    GoRoute(
+      path: '/saved_addresses',
+      builder: (context, state) => const SavedAddressesScreen(),
+    ),
+    GoRoute(
+      path: '/change_phone',
+      builder: (context, state) => const ChangePhoneNumberScreen(),
+    ),
+    GoRoute(
+      path: '/map-picker',
+      builder: (context, state) => const MapPickerScreen(),
+    ),
+    GoRoute(
+      path: '/feedback',
+      builder: (context, state) => const FeedbackSuggestionsScreen(),
+    ),
+    GoRoute(
+      path: '/about-loom',
+      builder: (context, state) => const AboutLoomScreen(),
+    ),
+    GoRoute(
+      path: '/wishlist',
+      builder: (context, state) => const WishlistScreen(),
+    ),
+    GoRoute(
+      path: '/dark-mode-toggle',
+      builder: (context, state) => const DarkModeToggleScreen(),
+    ),
+    GoRoute(
+      path: '/delete_account',
+      builder: (context, state) => const DeleteAccountScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
+    ),
+    GoRoute(
+      path: '/notifications_settings',
+      builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
   ],
 );

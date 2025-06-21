@@ -289,6 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'إعدادات الإشعارات',
                         iconColor: primary,
                         subtitle: 'تخصيص الإشعارات الخاصة بك',
+                        onTap: () => context.push('/notifications_settings'),
                       ),
                       _optionDivider(),
                       _buildOption(

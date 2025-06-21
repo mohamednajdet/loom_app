@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:badges/badges.dart' as badges;
 import 'package:go_router/go_router.dart';
+import 'dart:async'; // ضروري هنا!
 import '../blocs/home/home_bloc.dart';
 import '../blocs/home/home_state.dart';
 import '../blocs/cart/cart_bloc.dart';
@@ -10,9 +11,54 @@ import '../blocs/favorite/favorite_bloc.dart';
 import '../blocs/favorite/favorite_state.dart';
 import '../blocs/favorite/favorite_event.dart';
 import '../models/product_model.dart';
+import '../helpers/notifications_helper.dart';
+import '../services/firebase_messaging_helper.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool hasUnread = false;
+  late final StreamSubscription _notificationStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationsBadge();
+    // استمع لأي إشعار جديد
+    _notificationStream = FirebaseMessagingHelper.notificationStreamController.stream.listen((_) {
+      _loadNotificationsBadge();
+    });
+  }
+
+  @override
+  void dispose() {
+    // إيقاف الاستماع عند الخروج من الشاشة
+    _notificationStream.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadNotificationsBadge() async {
+    final val = await NotificationsHelper.hasUnreadNotifications();
+    if (mounted) {
+      setState(() {
+        hasUnread = val;
+      });
+    }
+  }
+
+  Future<void> _openNotificationsScreen() async {
+    await NotificationsHelper.markAllAsRead();
+    if (!mounted) return;
+    await context.push('/notifications');
+    if (mounted) {
+      await _loadNotificationsBadge();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +84,37 @@ class HomeScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // الجرس
-                    const Icon(Icons.notifications_none, color: primaryColor),
+                    // الجرس مع النقطة الحمراء الاحترافية
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: _openNotificationsScreen,
+                      child: badges.Badge(
+                        showBadge: hasUnread,
+                        position: badges.BadgePosition.topEnd(top: 0, end: 0),
+                        badgeStyle: const badges.BadgeStyle(
+                          badgeColor: Colors.transparent, // نجعل الخلفية شفافة لأننا نصنع نقطة مخصصة
+                          padding: EdgeInsets.all(0),
+                          elevation: 0,
+                        ),
+                        badgeContent: hasUnread
+                            ? const SizedBox(
+                                height: 9,
+                                width: 9,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        child: const Icon(
+                          Icons.notifications_none,
+                          size: 28,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
                     Container(
                       width: 290,
                       height: 40,
@@ -146,38 +221,34 @@ class HomeScreen extends StatelessWidget {
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
                             childAspectRatio: 0.72,
-                            children:
-                                products.map<Widget>((product) {
-                                  final isFav = favState.favoriteProductIds
-                                      .contains(product.id);
-                                  return GestureDetector(
-                                    onTap:
-                                        () => context.push(
-                                          '/product-details',
-                                          extra: product,
-                                        ),
-                                    child: ProductCard(
-                                      key: ValueKey(product.id),
-                                      title: product.name,
-                                      price: '${product.price} د.ع',
-                                      discount:
-                                          product.discount != 0
-                                              ? '-${product.discount}%'
-                                              : null,
-                                      imageUrl:
-                                          product.images.isNotEmpty
-                                              ? product.images[0]
-                                              : null,
-                                      showHeart: true,
-                                      isFavorite: isFav,
-                                      onFavoriteToggle: () {
-                                        context.read<FavoriteBloc>().add(
-                                          ToggleFavorite(product.id),
-                                        );
-                                      },
-                                    ),
-                                  );
-                                }).toList(),
+                            children: products.map<Widget>((product) {
+                              final isFav = favState.favoriteProductIds
+                                  .contains(product.id);
+                              return GestureDetector(
+                                onTap: () => context.push(
+                                  '/product-details',
+                                  extra: product,
+                                ),
+                                child: ProductCard(
+                                  key: ValueKey(product.id),
+                                  title: product.name,
+                                  price: '${product.price} د.ع',
+                                  discount: product.discount != 0
+                                      ? '-${product.discount}%'
+                                      : null,
+                                  imageUrl: product.images.isNotEmpty
+                                      ? product.images[0]
+                                      : null,
+                                  showHeart: true,
+                                  isFavorite: isFav,
+                                  onFavoriteToggle: () {
+                                    context.read<FavoriteBloc>().add(
+                                      ToggleFavorite(product.id),
+                                    );
+                                  },
+                                ),
+                              );
+                            }).toList(),
                           );
                         },
                       );
@@ -198,7 +269,7 @@ class HomeScreen extends StatelessWidget {
           child: BlocBuilder<CartBloc, CartState>(
             builder: (context, state) {
               return BottomNavigationBar(
-                selectedItemColor: primaryColor, // الرئيسية ACTIVE
+                selectedItemColor: primaryColor,
                 unselectedItemColor: const Color(0xFF777777),
                 currentIndex: 0,
                 type: BottomNavigationBarType.fixed,
@@ -232,7 +303,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       badgeStyle: const badges.BadgeStyle(
-                        badgeColor: Color(0xFF29434E), // لون الدائرة للسلة
+                        badgeColor: Color(0xFF29434E),
                         shape: badges.BadgeShape.circle,
                         padding: EdgeInsets.all(6),
                       ),
@@ -253,6 +324,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
+// باقي الأكواد بدون تغيير (CategoryCircle, ProductCard)...
 
 class CategoryCircle extends StatelessWidget {
   final String label;
@@ -332,33 +405,30 @@ class ProductCard extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: 1,
-                child:
-                    imageUrl != null
-                        ? ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            topRight: Radius.circular(8),
-                          ),
-                          child: Image.network(
-                            imageUrl!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder:
-                                (context, error, stackTrace) => Icon(
-                                  Icons.broken_image,
-                                  color:
-                                      isDark ? Colors.grey[500] : Colors.grey,
-                                ),
-                          ),
-                        )
-                        : Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 40,
+                child: imageUrl != null
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
+                        child: Image.network(
+                          imageUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.broken_image,
                             color: isDark ? Colors.grey[500] : Colors.grey,
                           ),
                         ),
+                      )
+                    : Center(
+                        child: Icon(
+                          Icons.image,
+                          size: 40,
+                          color: isDark ? Colors.grey[500] : Colors.grey,
+                        ),
+                      ),
               ),
               if (discount != null)
                 Positioned(
@@ -391,10 +461,9 @@ class ProductCard extends StatelessWidget {
                     onTap: onFavoriteToggle,
                     child: Icon(
                       isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color:
-                          isFavorite
-                              ? const Color(0xFF546E7A)
-                              : (isDark ? Colors.grey[600] : Colors.grey),
+                      color: isFavorite
+                          ? const Color(0xFF546E7A)
+                          : (isDark ? Colors.grey[600] : Colors.grey),
                       size: 20,
                     ),
                   ),
