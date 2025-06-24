@@ -66,102 +66,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder:
-          (context) => Center(
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: MediaQuery.of(context).size.width * 0.85,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha((0.08 * 255).toInt()),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+      builder: (context) => Center(
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.85,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withAlpha((0.08 * 255).toInt()),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'تسجيل الخروج',
+                  style: TextStyle(
+                    fontFamily: 'Cairo',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'هل انت متأكد من تسجيل الخروج؟',
+                  style: TextStyle(fontFamily: 'Cairo', fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                Row(
                   children: [
-                    const Text(
-                      'تسجيل الخروج',
-                      style: TextStyle(
-                        fontFamily: 'Cairo',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
+                    // زر "لا" على اليمين وثابت لونه
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF29434E),
+                          side: const BorderSide(color: Color(0xFF29434E)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          backgroundColor:
+                              Colors.white, // يبقى أبيض في كل الحالات
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text(
+                          'لا',
+                          style: TextStyle(
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: Color(0xFF29434E), // ثابت في كل الحالات
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'هل انت متأكد من تسجيل الخروج؟',
-                      style: TextStyle(fontFamily: 'Cairo', fontSize: 16),
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        // زر "لا" على اليمين وثابت لونه
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF29434E),
-                              side: const BorderSide(color: Color(0xFF29434E)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor:
-                                  Colors.white, // يبقى أبيض في كل الحالات
-                            ),
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text(
-                              'لا',
-                              style: TextStyle(
-                                fontFamily: 'Cairo',
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                                color: Color(0xFF29434E), // ثابت في كل الحالات
-                              ),
-                            ),
+                    const SizedBox(width: 12),
+                    // زر "نعم" على اليسار وثابت لونه
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF546E7A), // ثابت
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onConfirm();
+                        },
+                        child: const Text(
+                          'نعم',
+                          style: TextStyle(
+                            color: Colors.white, // ثابت
+                            fontFamily: 'Cairo',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        // زر "نعم" على اليسار وثابت لونه
-                        Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF546E7A), // ثابت
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              onConfirm();
-                            },
-                            child: const Text(
-                              'نعم',
-                              style: TextStyle(
-                                color: Colors.white, // ثابت
-                                fontFamily: 'Cairo',
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
+        ),
+      ),
     );
   }
 
@@ -201,10 +200,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            isDark
-                                ? const Color.fromRGBO(0, 0, 0, 0.10)
-                                : const Color.fromRGBO(0, 0, 0, 0.05),
+                        color: isDark
+                            ? const Color.fromRGBO(0, 0, 0, 0.10)
+                            : const Color.fromRGBO(0, 0, 0, 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -254,10 +252,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            isDark
-                                ? const Color.fromRGBO(0, 0, 0, 0.10)
-                                : const Color.fromRGBO(0, 0, 0, 0.05),
+                        color: isDark
+                            ? const Color.fromRGBO(0, 0, 0, 0.10)
+                            : const Color.fromRGBO(0, 0, 0, 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -343,10 +340,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            isDark
-                                ? const Color.fromRGBO(0, 0, 0, 0.10)
-                                : const Color.fromRGBO(0, 0, 0, 0.05),
+                        color: isDark
+                            ? const Color.fromRGBO(0, 0, 0, 0.10)
+                            : const Color.fromRGBO(0, 0, 0, 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -371,11 +367,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           size: 16,
                           color: Color(0xFF757575),
                         ),
-                        onTap:
-                            () => showLogoutDialog(
-                              context,
-                              () => logout(context),
-                            ),
+                        onTap: () =>
+                            showLogoutDialog(context, () => logout(context)),
                       ),
                       const Divider(height: 1),
                       ListTile(
@@ -423,9 +416,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (index == 0) {
                     context.go('/');
                   } else if (index == 1) {
-                    context.go('/categories');
+                    context.push('/categories');
                   } else if (index == 2) {
-                    context.go('/cart');
+                    context.push('/cart');
                   }
                 },
                 items: [
@@ -507,17 +500,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             color: theme.textTheme.bodyLarge?.color,
           ),
         ),
-        subtitle:
-            subtitle != null
-                ? Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontFamily: 'Cairo',
-                    fontSize: 13,
-                    color: theme.textTheme.bodySmall?.color ?? Colors.grey,
-                  ),
-                )
-                : null,
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFamily: 'Cairo',
+                  fontSize: 13,
+                  color: theme.textTheme.bodySmall?.color ?? Colors.grey,
+                ),
+              )
+            : null,
         trailing: const Icon(
           Icons.arrow_forward_ios,
           size: 16,

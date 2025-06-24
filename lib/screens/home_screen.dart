@@ -30,9 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadNotificationsBadge();
     // استمع لأي إشعار جديد
-    _notificationStream = FirebaseMessagingHelper.notificationStreamController.stream.listen((_) {
-      _loadNotificationsBadge();
-    });
+    _notificationStream = FirebaseMessagingHelper
+        .notificationStreamController
+        .stream
+        .listen((_) {
+          _loadNotificationsBadge();
+        });
   }
 
   @override
@@ -92,7 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         showBadge: hasUnread,
                         position: badges.BadgePosition.topEnd(top: 0, end: 0),
                         badgeStyle: const badges.BadgeStyle(
-                          badgeColor: Colors.transparent, // نجعل الخلفية شفافة لأننا نصنع نقطة مخصصة
+                          badgeColor: Colors
+                              .transparent, // نجعل الخلفية شفافة لأننا نصنع نقطة مخصصة
                           padding: EdgeInsets.all(0),
                           elevation: 0,
                         ),
@@ -147,7 +151,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     // البحث
-                    const Icon(Icons.search, color: primaryColor),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        context.push('/search');
+                      },
+                      child: const Icon(Icons.search, color: primaryColor),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -277,7 +287,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     theme.bottomNavigationBarTheme.backgroundColor ??
                     theme.scaffoldBackgroundColor,
                 onTap: (index) {
-                  if (index == 2) {
+                  if (index == 1) {
+                    context.push(
+                      '/categories',
+                    ); // ✅ هذا هو التعديل الوحيد المطلوب
+                  } else if (index == 2) {
                     context.push('/cart');
                   } else if (index == 3) {
                     context.push('/profile');

@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
             _displayed,
             style: GoogleFonts.poppins(
               fontSize: 64,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600, // <-- Semibold
               fontStyle: FontStyle.italic,
               color: const Color(0xFF546E7A),
               letterSpacing: 3,

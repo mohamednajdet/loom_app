@@ -12,6 +12,7 @@ import 'blocs/home/home_event.dart';
 import 'blocs/cart/cart_bloc.dart';
 import 'blocs/favorite/favorite_bloc.dart';
 import 'blocs/favorite/favorite_event.dart';
+import 'blocs/search/search_bloc.dart';
 import 'blocs/theme_cubit.dart';
 
 // الشاشات
@@ -36,6 +37,10 @@ import 'screens/dark_mode_toggle_screen.dart';
 import 'screens/delete_account_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/notifications_settings_screen.dart';
+import 'package:loom_app/screens/categories_screen.dart';
+import 'screens/products_screen.dart';
+import 'screens/search_screen.dart';
+
 // الموديلات
 import 'models/product_model.dart';
 
@@ -122,6 +127,30 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/notifications_settings',
       builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/categories',
+      builder: (context, state) => BlocProvider(
+        create: (context) => SearchBloc(),
+        child: const CategoriesScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => BlocProvider(
+        create: (_) => SearchBloc(),
+        child: const SearchScreen(),
+      ),
+    ),
+    GoRoute(
+      path: '/products',
+      builder: (context, state) {
+        final filters = state.extra as Map<String, dynamic>?;
+        return ProductsScreen(
+          gender: filters?['gender'],
+          type: filters?['type'], // ← بدل category
+        );
+      },
     ),
   ],
 );

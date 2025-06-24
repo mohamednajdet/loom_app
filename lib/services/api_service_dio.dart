@@ -513,4 +513,76 @@ class ApiServiceDio {
       );
     }
   }
+
+  // جلب المنتجات مع فلاتر (gender/category)
+  static Future<List<ProductModel>> fetchProducts({
+    String? gender,
+    String? type, // ← بدل من category
+  }) async {
+    try {
+      final Map<String, dynamic> queryParameters = {};
+      if (gender != null) queryParameters['gender'] = gender;
+      if (type != null) queryParameters['type'] = type; // ← تعديل هنا
+
+      final response = await dio.get(
+        '/products/',
+        queryParameters: queryParameters.isEmpty ? null : queryParameters,
+      );
+      final List data = response.data;
+      return data
+          .map<ProductModel>((json) => ProductModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'فشل تحميل المنتجات');
+    }
+  }
+
+  // البحث عن المنتجات
+  static Future<List<ProductModel>> searchProducts({
+    String? query,
+    List<String>? types,
+    List<String>? genders,
+    List<String>? sizes,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    try {
+      final Map<String, dynamic> params = {};
+
+      if (query != null && query.trim().isNotEmpty) {
+        params['q'] = query.trim();
+      }
+      if (types != null && types.isNotEmpty) {
+        params['types'] = types;
+      }
+      if (genders != null && genders.isNotEmpty) {
+        params['genders'] = genders;
+      }
+      if (sizes != null && sizes.isNotEmpty) {
+        params['sizes'] = sizes;
+      }
+      if (minPrice != null) {
+        params['min'] = minPrice;
+      }
+      if (maxPrice != null) {
+        params['max'] = maxPrice;
+      }
+
+      final response = await dio.get(
+        '/products/search',
+        queryParameters: params,
+      );
+
+      final data = response.data;
+      if (data is! List) {
+        throw Exception('الناتج من السيرفر غير متوقع');
+      }
+
+      return data
+          .map<ProductModel>((json) => ProductModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'فشل البحث عن المنتجات');
+    }
+  }
 }

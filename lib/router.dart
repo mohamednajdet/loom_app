@@ -21,6 +21,13 @@ import 'screens/dark_mode_toggle_screen.dart';
 import 'screens/delete_account_screen.dart';
 import 'screens/notifications_screen.dart';
 import 'screens/notifications_settings_screen.dart';
+import 'package:loom_app/screens/categories_screen.dart';
+import 'screens/products_screen.dart';
+import 'screens/search_screen.dart';
+
+// Bloc
+import 'blocs/search/search_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 // الموديلات
 import 'models/product_model.dart';
@@ -109,6 +116,33 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/notifications_settings',
       builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
+    GoRoute(
+      path: '/categories',
+      builder: (context, state) => BlocProvider(
+        create: (context) => SearchBloc(),
+        child: const CategoriesScreen(),
+      ),
+    ),
+
+    // ✅ حل مشكلة البحث: BlocProvider حول SearchScreen فقط
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => BlocProvider(
+        create: (_) => SearchBloc(),
+        child: const SearchScreen(),
+      ),
+    ),
+
+    GoRoute(
+      path: '/products',
+      builder: (context, state) {
+        final filters = state.extra as Map<String, dynamic>?;
+        return ProductsScreen(
+          gender: filters?['gender'],
+          type: filters?['type'], // ← بدل category
+        );
+      },
     ),
   ],
 );
