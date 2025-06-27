@@ -15,7 +15,6 @@ class CheckoutScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final cardColor = theme.cardColor;
-    final subTextColor = theme.textTheme.bodySmall?.color ?? Colors.grey;
     final borderColor = isDark ? Colors.grey[800]! : const Color(0xFFDDDDDD);
 
     return Directionality(
@@ -28,7 +27,11 @@ class CheckoutScreen extends StatelessWidget {
               final cartItems = state.cartItems;
               final selectedAddress = state.selectedAddressLabel;
               final totalItems = cartItems.fold<int>(0, (sum, item) => sum + item.quantity);
-              final totalPrice = cartItems.fold<int>(0, (sum, item) => sum + item.product.price * item.quantity);
+              // مجموع الأسعار المخفضة وليس الأصلية
+              final totalPrice = cartItems.fold<int>(
+                0,
+                (sum, item) => sum + (item.product.discountedPrice ?? item.product.price) * item.quantity,
+              );
               final deliveryFee = totalPrice >= 100000 ? 0 : 5000;
               final grandTotal = totalPrice + deliveryFee;
 
@@ -49,8 +52,8 @@ class CheckoutScreen extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: isDark
-                                ? Colors.black.withAlpha(33) // 0.13 * 255 ≈ 33
-                                : const Color(0x26000000),   // نفسها للنورمال
+                                ? Colors.black.withAlpha(33)
+                                : const Color(0x26000000),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -86,78 +89,108 @@ class CheckoutScreen extends StatelessWidget {
 
                     // المنتجات
                     ...cartItems.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: cardColor,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isDark
-                                    ? Colors.black.withAlpha(31) // 0.12 * 255 ≈ 31
-                                    : Colors.black.withAlpha(15), // 0.06 * 255 ≈ 15
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            textDirection: TextDirection.rtl,
-                            children: [
-                              Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  image: item.product.images.isNotEmpty
-                                      ? DecorationImage(image: NetworkImage(item.product.images.first), fit: BoxFit.cover)
-                                      : null,
+                      (item) {
+                        final int price = item.product.price;
+                        final int discountedPrice = item.product.discountedPrice ?? price;
+                        final bool hasDiscount = item.product.discount > 0 && discountedPrice < price;
+                        final int totalDiscounted = discountedPrice * item.quantity;
+                        final int totalOriginal = price * item.quantity;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
                                   color: isDark
-                                      ? Colors.grey[800]
-                                      : const Color(0xFFD9D9D9),
+                                      ? Colors.black.withAlpha(31)
+                                      : Colors.black.withAlpha(15),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                                child: item.product.images.isEmpty
-                                    ? Icon(Icons.image, color: isDark ? Colors.grey[500] : Colors.grey)
-                                    : null,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(item.product.name,
-                                        style: theme.textTheme.bodyLarge?.copyWith(
-                                          fontSize: 14,
-                                          fontFamily: 'Cairo',
-                                          color: theme.colorScheme.primary,
-                                        )),
-                                    Text('${item.product.price * item.quantity} د.ع',
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          fontSize: 12,
-                                          fontFamily: 'Cairo',
-                                          color: subTextColor,
-                                        )),
-                                    Row(
-                                      children: [
-                                        _buildColorCircle(item.selectedColor, theme),
-                                        const SizedBox(width: 6),
-                                        Text('القياس: ${item.selectedSize}',
-                                            style: theme.textTheme.bodyMedium?.copyWith(
-                                              fontSize: 14,
+                              ],
+                            ),
+                            child: Row(
+                              textDirection: TextDirection.rtl,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    image: item.product.images.isNotEmpty
+                                        ? DecorationImage(image: NetworkImage(item.product.images.first), fit: BoxFit.cover)
+                                        : null,
+                                    color: isDark
+                                        ? Colors.grey[800]
+                                        : const Color(0xFFD9D9D9),
+                                  ),
+                                  child: item.product.images.isEmpty
+                                      ? Icon(Icons.image, color: isDark ? Colors.grey[500] : Colors.grey)
+                                      : null,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(item.product.name,
+                                          style: theme.textTheme.bodyLarge?.copyWith(
+                                            fontSize: 14,
+                                            fontFamily: 'Cairo',
+                                            color: theme.colorScheme.primary,
+                                          )),
+                                      Row(
+                                        children: [
+                                          // سعر بعد التخفيض
+                                          Text(
+                                            '$totalDiscounted د.ع',
+                                            style: theme.textTheme.bodySmall?.copyWith(
+                                              fontSize: 13,
                                               fontFamily: 'Cairo',
-                                              color: theme.colorScheme.primary,
-                                            )),
-                                      ],
-                                    ),
-                                  ],
+                                              color: isDark
+                                                  ? Colors.grey[300]
+                                                  : const Color(0xFF757575),
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // السعر الأصلي مشطوب إذا يوجد خصم
+                                          if (hasDiscount)
+                                            Text(
+                                              '$totalOriginal د.ع',
+                                              style: theme.textTheme.bodySmall?.copyWith(
+                                                fontSize: 12,
+                                                fontFamily: 'Cairo',
+                                                color: Colors.grey,
+                                                decoration: TextDecoration.lineThrough,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          _buildColorCircle(item.selectedColor, theme),
+                                          const SizedBox(width: 6),
+                                          Text('القياس: ${item.selectedSize}',
+                                              style: theme.textTheme.bodyMedium?.copyWith(
+                                                fontSize: 14,
+                                                fontFamily: 'Cairo',
+                                                color: theme.colorScheme.primary,
+                                              )),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 20),
@@ -173,7 +206,7 @@ class CheckoutScreen extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: isDark
-                                ? Colors.black.withAlpha(33) // 0.13 * 255 ≈ 33
+                                ? Colors.black.withAlpha(33)
                                 : const Color(0x3F000000),
                             blurRadius: 4,
                             offset: const Offset(0, 4),

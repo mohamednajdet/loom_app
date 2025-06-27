@@ -49,7 +49,7 @@ class WishlistScreen extends StatelessWidget {
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16, vertical: 12),
                       child: GridView.builder(
                         itemCount: favorites.length,
                         gridDelegate:
@@ -61,8 +61,14 @@ class WishlistScreen extends StatelessWidget {
                         ),
                         itemBuilder: (context, index) {
                           final product = favorites[index];
-                          final isFav =
-                              state.favoriteProductIds.contains(product.id);
+                          final isFav = state.favoriteProductIds.contains(product.id);
+
+                          // منطق السعر المخفض والسعر الأصلي
+                          final int price = product.price;
+                          final int discountedPrice = product.discountedPrice ?? price;
+                          final int discount = product.discount;
+                          final bool hasDiscount = discount > 0 && discountedPrice < price;
+
                           void goToDetails() =>
                               context.push('/product-details', extra: product);
 
@@ -89,10 +95,9 @@ class WishlistScreen extends StatelessWidget {
                                       onTap: goToDetails,
                                       child: ProductCard(
                                         title: product.name,
-                                        price: '${product.price} د.ع',
-                                        discount: product.discount != 0
-                                            ? '-${product.discount}%'
-                                            : null,
+                                        price: '$discountedPrice د.ع',
+                                        originalPrice: hasDiscount ? price : null,
+                                        discount: hasDiscount ? '-$discount%' : null,
                                         imageUrl: product.images.isNotEmpty
                                             ? product.images[0]
                                             : null,
@@ -101,8 +106,7 @@ class WishlistScreen extends StatelessWidget {
                                         onFavoriteToggle: () {
                                           context
                                               .read<FavoriteBloc>()
-                                              .add(ToggleFavorite(
-                                                  product.id));
+                                              .add(ToggleFavorite(product.id));
                                         },
                                       ),
                                     ),
@@ -115,8 +119,7 @@ class WishlistScreen extends StatelessWidget {
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: kPrimary,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(8),
                                         ),
                                         elevation: 4,
                                       ),

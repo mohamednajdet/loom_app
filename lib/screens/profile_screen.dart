@@ -19,6 +19,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String? userName;
   String? userPhone;
+  int _selectedIndex = 4; // حسابي دائماً index رقم 4
 
   @override
   void initState() {
@@ -102,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    // زر "لا" على اليمين وثابت لونه
+                    // زر "لا"
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
@@ -112,8 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          backgroundColor:
-                              Colors.white, // يبقى أبيض في كل الحالات
+                          backgroundColor: Colors.white,
                         ),
                         onPressed: () => Navigator.of(context).pop(),
                         child: const Text(
@@ -122,17 +122,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontFamily: 'Cairo',
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: Color(0xFF29434E), // ثابت في كل الحالات
+                            color: Color(0xFF29434E),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // زر "نعم" على اليسار وثابت لونه
+                    // زر "نعم"
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF546E7A), // ثابت
+                          backgroundColor: Color(0xFF546E7A),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -146,7 +146,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: const Text(
                           'نعم',
                           style: TextStyle(
-                            color: Colors.white, // ثابت
+                            color: Colors.white,
                             fontFamily: 'Cairo',
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
@@ -162,6 +162,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  void _onNavTap(int index) {
+    if (_selectedIndex == index) return; // إذا أنت في نفس الشاشة لا تنتقل
+    setState(() => _selectedIndex = index);
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        context.go('/categories');
+        break;
+      case 2:
+        context.go('/cart');
+        break;
+      case 3:
+        context.go('/orders');
+        break;
+      case 4:
+        // لا تسوي شي لأنك على حسابي
+        break;
+    }
   }
 
   @override
@@ -244,7 +266,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 // جميع الخيارات داخل Container واحد متلاصق
                 Container(
                   decoration: BoxDecoration(
@@ -332,7 +353,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
                 Container(
                   decoration: BoxDecoration(
@@ -405,31 +425,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return BottomNavigationBar(
                 selectedItemColor: primary,
                 unselectedItemColor: const Color(0xFF777777),
-                backgroundColor:
-                    Theme.of(
-                      context,
-                    ).bottomNavigationBarTheme.backgroundColor ??
-                    Theme.of(context).scaffoldBackgroundColor,
-                currentIndex: 3,
+                currentIndex: _selectedIndex,
                 type: BottomNavigationBarType.fixed,
-                onTap: (index) {
-                  if (index == 0) {
-                    context.go('/');
-                  } else if (index == 1) {
-                    context.push('/categories');
-                  } else if (index == 2) {
-                    context.push('/cart');
-                  }
-                },
+                backgroundColor:
+                    Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+                    Theme.of(context).scaffoldBackgroundColor,
+                onTap: _onNavTap,
                 items: [
+                  // الرئيسية
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.home_outlined),
                     label: 'الرئيسية',
                   ),
+                  // التصنيفات
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.category_outlined),
                     label: 'التصنيفات',
                   ),
+                  // السلة
                   BottomNavigationBarItem(
                     icon: badges.Badge(
                       showBadge: state.items.isNotEmpty,
@@ -449,6 +462,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     label: 'السلة',
                   ),
+                  // طلباتي
+                  BottomNavigationBarItem(
+                    icon: SvgPicture.asset(
+                      'assets/icons/delivery.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: ColorFilter.mode(
+                        _selectedIndex == 3
+                            ? primary
+                            : const Color(0xFF777777),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    label: 'طلباتي',
+                  ),
+                  // حسابي
                   const BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline),
                     label: 'حسابي',
@@ -464,12 +493,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Divider رفيع بين الخيارات
   Widget _optionDivider() => const Divider(
-    height: 1,
-    thickness: 1,
-    color: Color(0xFFF0F0F0),
-    indent: 16,
-    endIndent: 16,
-  );
+        height: 1,
+        thickness: 1,
+        color: Color(0xFFF0F0F0),
+        indent: 16,
+        endIndent: 16,
+      );
 
   Widget _buildOption({
     required BuildContext context,

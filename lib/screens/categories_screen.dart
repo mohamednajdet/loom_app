@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:badges/badges.dart' as badges;
 
-import '../widgets/back_button_custom.dart';
 import '../widgets/product_card.dart';
 import '../blocs/search/search_bloc.dart';
 import '../blocs/search/search_event.dart';
 import '../blocs/search/search_state.dart';
 import '../blocs/favorite/favorite_bloc.dart';
 import '../blocs/favorite/favorite_event.dart';
+import '../blocs/cart/cart_bloc.dart';
+import '../blocs/cart/cart_state.dart';
 
 class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
@@ -21,8 +23,14 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   int selectedCategoryIndex = 0;
   final TextEditingController _searchController = TextEditingController();
+  int _selectedIndex = 1; // التصنيفات دائماً active
 
-  final List<String> mainCategories = ['نساء', 'رجال', 'طفلة أنثى', 'طفل ذكر'];
+  final List<String> mainCategories = [
+    'نساء',
+    'رجال',
+    'اطفال بناتي',
+    'اطفال ولادي',
+  ];
 
   final List<String> genderValues = [
     'female', // نساء
@@ -73,18 +81,16 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-  context.read<SearchBloc>().stream.listen((state) {
-    if (mounted && _searchController.text.trim().isNotEmpty) {
-      setState(() {});
-    }
-  });
-}
-
+    context.read<SearchBloc>().stream.listen((state) {
+      if (mounted && _searchController.text.trim().isNotEmpty) {
+        setState(() {});
+      }
+    });
+  }
 
   void _onSearchChanged() {
     final query = _searchController.text.trim();
     if (query.isEmpty) {
-      // لا تبحث إذا فارغ، فقط أعد بناء الشاشة
       setState(() {});
     } else {
       context.read<SearchBloc>().add(SearchProducts(query));
@@ -97,15 +103,35 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     super.dispose();
   }
 
+  void _onNavTap(int index) {
+    if (_selectedIndex == index) return; // لا يعمل إذا نفس الشاشة
+    setState(() => _selectedIndex = index);
+    switch (index) {
+      case 0:
+        context.go('/');
+        break;
+      case 1:
+        // التصنيفات - لا شي
+        break;
+      case 2:
+        context.go('/cart');
+        break;
+      case 3:
+        context.go('/orders');
+        break;
+      case 4:
+        context.go('/profile');
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
     final primary = const Color(0xFF546E7A);
-    final secondaryBg = isDark
-        ? const Color(0xFF222D32)
-        : const Color(0xFFF5F5F5);
+    final secondaryBg = isDark ? const Color(0xFF222D32) : const Color(0xFFF5F5F5);
     final chipSelected = isDark ? Colors.white10 : const Color(0x66546E7A);
 
     return Scaffold(
@@ -115,8 +141,22 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
-              const BackButtonCustom(title: 'التصنيفات'),
-              const SizedBox(height: 16),
+              // العنوان فقط بدون سهم رجوع
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                child: Center(
+                  child: Text(
+                    'التصنيفات',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Cairo',
+                      color: primary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
@@ -134,9 +174,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           border: InputBorder.none,
                           hintText: 'ابحث عن منتج',
                           hintStyle: TextStyle(
-                            color: isDark
-                                ? Colors.grey[400]
-                                : const Color(0xFF9E9E9E),
+                            color: isDark ? Colors.grey[400] : const Color(0xFF9E9E9E),
                             fontFamily: 'Cairo',
                           ),
                         ),
@@ -152,10 +190,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               const SizedBox(height: 16),
               Expanded(
                 child: _searchController.text.trim().isEmpty
-                    // العرض الأساسي: تصنيفات
                     ? Row(
                         children: [
-                          // شبكة الأيقونات (يسار)
                           Expanded(
                             child: GridView.count(
                               crossAxisCount: 3,
@@ -166,14 +202,13 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   .map((item) {
                                     return GestureDetector(
                                       onTap: () {
-                                        final selectedGender =
-                                            genderValues[selectedCategoryIndex];
-                                        final selectedCategory = item['title']!;
+                                        final selectedGender = genderValues[selectedCategoryIndex];
+                                        final selectedCategoryType = item['title']!;
                                         context.push(
                                           '/products',
                                           extra: {
                                             'gender': selectedGender,
-                                            'type': selectedCategory,
+                                            'categoryType': selectedCategoryType,
                                           },
                                         );
                                       },
@@ -183,9 +218,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                           CircleAvatar(
                                             radius: 35,
                                             backgroundColor: isDark
-                                                ? const Color(
-                                                    0xFF546E7A,
-                                                  ).withAlpha(220)
+                                                ? const Color(0xFF546E7A).withAlpha(220)
                                                 : const Color(0xFF546E7A),
                                             child: Container(
                                               width: 38,
@@ -196,11 +229,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                                 width: 38,
                                                 height: 38,
                                                 fit: BoxFit.contain,
-                                                colorFilter:
-                                                    const ColorFilter.mode(
-                                                      Colors.white,
-                                                      BlendMode.srcIn,
-                                                    ),
+                                                colorFilter: const ColorFilter.mode(
+                                                  Colors.white,
+                                                  BlendMode.srcIn,
+                                                ),
                                               ),
                                             ),
                                           ),
@@ -211,9 +243,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                             style: TextStyle(
                                               fontFamily: 'Cairo',
                                               fontSize: 13,
-                                              color: isDark
-                                                  ? Colors.grey[300]
-                                                  : const Color(0xFF29434E),
+                                              color: isDark ? Colors.grey[300] : const Color(0xFF29434E),
                                             ),
                                           ),
                                         ],
@@ -224,36 +254,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          // قائمة التصنيفات الرئيسية (يمين)
                           SizedBox(
                             width: 90,
                             child: ListView.builder(
                               itemCount: mainCategories.length,
                               itemBuilder: (context, index) {
-                                final isSelected =
-                                    selectedCategoryIndex == index;
+                                final isSelected = selectedCategoryIndex == index;
                                 return GestureDetector(
                                   onTap: () {
-                                    setState(
-                                      () => selectedCategoryIndex = index,
-                                    );
+                                    setState(() => selectedCategoryIndex = index);
                                   },
                                   child: Stack(
                                     children: [
                                       Container(
                                         width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12,
-                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
                                         decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? chipSelected
-                                              : Colors.transparent,
-                                          borderRadius:
-                                              const BorderRadius.horizontal(
-                                                right: Radius.circular(0),
-                                                left: Radius.circular(16),
-                                              ),
+                                          color: isSelected ? chipSelected : Colors.transparent,
+                                          borderRadius: const BorderRadius.horizontal(
+                                            right: Radius.circular(0),
+                                            left: Radius.circular(16),
+                                          ),
                                         ),
                                         child: Center(
                                           child: Text(
@@ -262,12 +283,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                               fontFamily: 'Cairo',
                                               color: isSelected
                                                   ? primary
-                                                  : (isDark
-                                                        ? Colors.white
-                                                        : Colors.black),
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
+                                                  : (isDark ? Colors.white : Colors.black),
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                             ),
                                           ),
                                         ),
@@ -280,17 +297,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                           child: Container(
                                             width: 6,
                                             decoration: BoxDecoration(
-                                              color: isDark
-                                                  ? const Color(0xFF29434A)
-                                                  : const Color(0xFF29434E),
-                                              borderRadius:
-                                                  const BorderRadius.only(
-                                                    topRight: Radius.circular(
-                                                      0,
-                                                    ),
-                                                    bottomRight:
-                                                        Radius.circular(16),
-                                                  ),
+                                              color: isDark ? const Color(0xFF29434A) : const Color(0xFF29434E),
+                                              borderRadius: const BorderRadius.only(
+                                                bottomRight: Radius.circular(16),
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -302,7 +312,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                           ),
                         ],
                       )
-                    // عرض نتائج البحث إذا في نص بحث
                     : BlocBuilder<SearchBloc, SearchState>(
                         builder: (context, state) {
                           if (state is SearchInitial) {
@@ -311,9 +320,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                 'ابحث عن منتج...',
                                 style: TextStyle(
                                   fontFamily: 'Cairo',
-                                  color: textColor.withValues(
-                                    alpha: (0.6 * 255),
-                                  ),
+                                  color: textColor.withAlpha((0.6 * 255).toInt()),
                                 ),
                               ),
                             );
@@ -329,35 +336,32 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                   'لا توجد منتجات مطابقة',
                                   style: TextStyle(
                                     fontFamily: 'Cairo',
-                                    color: textColor.withValues(
-                                      alpha: (0.6 * 255),
-                                    ),
+                                    color: textColor.withAlpha((0.6 * 255).toInt()),
                                   ),
                                 ),
                               );
                             }
-                            final favoriteState = context
-                                .watch<FavoriteBloc>()
-                                .state;
+                            final favoriteState = context.watch<FavoriteBloc>().state;
 
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 8,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                               child: GridView.builder(
                                 itemCount: products.length,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.60,
-                                      crossAxisSpacing: 12,
-                                      mainAxisSpacing: 12,
-                                    ),
+                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  childAspectRatio: 0.60,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
                                 itemBuilder: (context, index) {
                                   final product = products[index];
-                                  final isFav = favoriteState.favoriteProductIds
-                                      .contains(product.id);
+                                  final isFav = favoriteState.favoriteProductIds.contains(product.id);
+
+                                  // حساب الأسعار للمنتج (سعر اصلي وسعر التخفيض)
+                                  final int price = product.price;
+                                  final int discountedPrice = product.discountedPrice ?? price;
+                                  final bool hasDiscount = product.discount > 0 && discountedPrice < price;
+
                                   void goToDetails() => context.push(
                                     '/product-details',
                                     extra: product,
@@ -366,15 +370,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                     aspectRatio: 0.60,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF2A2A2A)
-                                            : Colors.white,
+                                        color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: isDark
-                                                ? Colors.black38
-                                                : Colors.black12,
+                                            color: isDark ? Colors.black38 : Colors.black12,
                                             blurRadius: 10,
                                             offset: const Offset(0, 2),
                                           ),
@@ -387,23 +387,15 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                               onTap: goToDetails,
                                               child: ProductCard(
                                                 title: product.name,
-                                                price: '${product.price} د.ع',
-                                                discount: product.discount != 0
-                                                    ? '-${product.discount}%'
-                                                    : null,
-                                                imageUrl:
-                                                    product.images.isNotEmpty
-                                                    ? product.images[0]
-                                                    : null,
+                                                price: '$discountedPrice د.ع',
+                                                originalPrice: hasDiscount ? price : null,
+                                                discount: hasDiscount ? '-${product.discount}%' : null,
+                                                imageUrl: product.images.isNotEmpty ? product.images[0] : null,
                                                 showHeart: true,
                                                 isFavorite: isFav,
                                                 onFavoriteToggle: () {
-                                                  context
-                                                      .read<FavoriteBloc>()
-                                                      .add(
-                                                        ToggleFavorite(
-                                                          product.id,
-                                                        ),
+                                                  context.read<FavoriteBloc>().add(
+                                                        ToggleFavorite(product.id),
                                                       );
                                                 },
                                               ),
@@ -417,8 +409,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: primary,
                                                 shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
+                                                  borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 elevation: 4,
                                               ),
@@ -449,6 +440,65 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               ),
             ],
           ),
+        ),
+      ),
+      bottomNavigationBar: Directionality(
+        textDirection: TextDirection.rtl,
+        child: BlocBuilder<CartBloc, CartState>(
+          builder: (context, state) {
+            return BottomNavigationBar(
+              selectedItemColor: primary,
+              unselectedItemColor: const Color(0xFF777777),
+              currentIndex: _selectedIndex,
+              type: BottomNavigationBarType.fixed,
+              backgroundColor:
+                  Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
+                  Theme.of(context).scaffoldBackgroundColor,
+              onTap: _onNavTap,
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  label: 'الرئيسية',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.category_outlined),
+                  label: 'التصنيفات',
+                ),
+                BottomNavigationBarItem(
+                  icon: badges.Badge(
+                    showBadge: state.items.isNotEmpty,
+                    badgeContent: Text(
+                      '${state.items.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                    badgeStyle: const badges.BadgeStyle(
+                      badgeColor: Color(0xFF546E7A),
+                      shape: badges.BadgeShape.circle,
+                      padding: EdgeInsets.all(6),
+                    ),
+                    child: const Icon(Icons.shopping_cart_outlined),
+                  ),
+                  label: 'السلة',
+                ),
+                BottomNavigationBarItem(
+                  icon: SvgPicture.asset(
+                    'assets/icons/delivery.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: ColorFilter.mode(
+                      _selectedIndex == 3 ? primary : const Color(0xFF777777),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  label: 'طلباتي',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline),
+                  label: 'حسابي',
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

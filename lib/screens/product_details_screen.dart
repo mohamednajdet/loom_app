@@ -44,11 +44,16 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    // الألوان الموحدة
     final primaryColor = const Color(0xFF546E7A);
     final background = theme.scaffoldBackgroundColor;
     final cardColor = theme.cardColor;
     final textColor = isDark ? Colors.grey[100] : const Color(0xFF29434E);
+
+    // حساب السعر المخفض والسعر الأصلي ونسبة الخصم
+    final int price = widget.product.price;
+    final int discountedPrice = widget.product.discountedPrice ?? price;
+    final int discount = widget.product.discount;
+    final bool hasDiscount = discount > 0 && discountedPrice < price;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -181,13 +186,48 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            '${widget.product.price} د.ع',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontFamily: 'Cairo',
-                              color: textColor,
-                            ),
+                          // السعر والسعر المشطوب وشارة الخصم إذا يوجد خصم
+                          Row(
+                            children: [
+                              Text(
+                                '$discountedPrice د.ع',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontFamily: 'Cairo',
+                                  color: Colors.green.shade800,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (hasDiscount) ...[
+                                const SizedBox(width: 10),
+                                Text(
+                                  '$price د.ع',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: 'Cairo',
+                                    color: Colors.grey,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF29434E),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    '-$discount%',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.white,
+                                      fontFamily: 'Tajawal',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),

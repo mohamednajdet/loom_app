@@ -3,7 +3,6 @@ import '../../services/api_service_dio.dart';
 import 'search_event.dart';
 import 'search_state.dart';
 
-
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
   SearchBloc() : super(SearchInitial()) {
     on<SearchProducts>(_onSearchProducts);
@@ -41,6 +40,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         (event.types?.isEmpty ?? true) &&
         (event.genders?.isEmpty ?? true) &&
         (event.sizes?.isEmpty ?? true) &&
+        (event.categoryTypes?.isEmpty ?? true) &&
         event.minPrice == null &&
         event.maxPrice == null;
 
@@ -57,6 +57,7 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
         types: event.types,
         genders: event.genders,
         sizes: event.sizes,
+        categoryTypes: event.categoryTypes,
         minPrice: event.minPrice,
         maxPrice: event.maxPrice,
       );

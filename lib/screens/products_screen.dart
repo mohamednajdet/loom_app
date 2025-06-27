@@ -14,8 +14,9 @@ import '../../blocs/favorite/favorite_event.dart';
 class ProductsScreen extends StatefulWidget {
   final String? gender;
   final String? type;
+  final String? categoryType;
 
-  const ProductsScreen({super.key, this.gender, this.type});
+  const ProductsScreen({super.key, this.gender, this.type, this.categoryType});
 
   static const kPrimary = Color(0xFF546E7A);
   static const kAccent = Color(0xFF29434E);
@@ -34,6 +35,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     _productsFuture = ApiServiceDio.fetchProducts(
       gender: widget.gender,
       type: widget.type,
+      categoryType: widget.categoryType, // <-- دعم categoryType
     );
   }
 
@@ -87,21 +89,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           );
                         }
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           child: GridView.builder(
                             itemCount: products.length,
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 0.60,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                            ),
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  childAspectRatio: 0.60,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                ),
                             itemBuilder: (context, index) {
                               final product = products[index];
+                              // الأسعار والحسومات
+                              final int price = product.price;
+                              final int discountedPrice = product.discountedPrice ?? price;
+                              final int discount = product.discount;
+                              final bool hasDiscount = discount > 0 && discountedPrice < price;
+
                               void goToDetails() => context.push(
-                                    '/product-details',
-                                    extra: product,
-                                  );
+                                '/product-details',
+                                extra: product,
+                              );
                               return AspectRatio(
                                 aspectRatio: 0.60,
                                 child: Container(
@@ -110,7 +122,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: isDark ? Colors.black38 : Colors.black12,
+                                        color: isDark
+                                            ? Colors.black38
+                                            : Colors.black12,
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -123,19 +137,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           onTap: goToDetails,
                                           child: ProductCard(
                                             title: product.name,
-                                            price: '${product.price} د.ع',
-                                            discount: product.discount != 0
-                                                ? '-${product.discount}%'
-                                                : null,
+                                            price: '$discountedPrice د.ع',
+                                            originalPrice: hasDiscount ? price : null,
+                                            discount: hasDiscount ? '-$discount%' : null,
                                             imageUrl: product.images.isNotEmpty
                                                 ? product.images[0]
                                                 : null,
                                             showHeart: true,
-                                            isFavorite: favState.favoriteProductIds.contains(product.id),
+                                            isFavorite: favState
+                                                .favoriteProductIds
+                                                .contains(product.id),
                                             onFavoriteToggle: () {
                                               context.read<FavoriteBloc>().add(
-                                                    ToggleFavorite(product.id),
-                                                  );
+                                                ToggleFavorite(product.id),
+                                              );
                                             },
                                           ),
                                         ),
@@ -146,9 +161,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                         width: double.infinity,
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: ProductsScreen.kPrimary,
+                                            backgroundColor:
+                                                ProductsScreen.kPrimary,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             elevation: 4,
                                           ),

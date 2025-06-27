@@ -20,6 +20,7 @@ class SearchProductsWithFilters extends SearchEvent {
   final List<String>? types;
   final List<String>? genders;
   final List<String>? sizes;
+  final List<String>? categoryTypes; // ✅ تم إضافته هنا
   final double? minPrice;
   final double? maxPrice;
 
@@ -28,6 +29,7 @@ class SearchProductsWithFilters extends SearchEvent {
     this.types,
     this.genders,
     this.sizes,
+    this.categoryTypes, // ✅ هنا أيضاً
     this.minPrice,
     this.maxPrice,
   });
@@ -38,6 +40,7 @@ class SearchProductsWithFilters extends SearchEvent {
         types ?? [],
         genders ?? [],
         sizes ?? [],
+        categoryTypes ?? [], // ✅ إضافة في props
         minPrice ?? 0.0,
         maxPrice ?? 0.0,
       ];

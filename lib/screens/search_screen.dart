@@ -23,9 +23,8 @@ class SearchScreen extends StatelessWidget {
     final scaffoldColor = theme.scaffoldBackgroundColor;
     final cardColor = isDark ? const Color(0xFF2A2A2A) : Colors.white;
     final emptyTextColor = isDark ? Colors.white60 : Colors.grey;
-    final secondaryBg = isDark
-        ? const Color(0xFF1E1E1E)
-        : const Color(0xFFF5F5F5);
+    final secondaryBg =
+        isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5);
     final textColor = theme.textTheme.bodyLarge?.color ?? Colors.black;
     final controller = TextEditingController();
 
@@ -72,8 +71,8 @@ class SearchScreen extends StatelessWidget {
                             ),
                           ),
                           onChanged: (query) => context.read<SearchBloc>().add(
-                            SearchProducts(query),
-                          ),
+                                SearchProducts(query),
+                              ),
                         ),
                       ),
                       GestureDetector(
@@ -148,19 +147,28 @@ class SearchScreen extends StatelessWidget {
                           itemCount: products.length,
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.60,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
+                            crossAxisCount: 2,
+                            childAspectRatio: 0.60,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                          ),
                           itemBuilder: (context, index) {
                             final product = products[index];
                             final isFav = favoriteState.favoriteProductIds
                                 .contains(product.id);
+
+                            // منطق السعر: سعر مخفض + سعر أصلي مشطوب + شارة الخصم
+                            final int price = product.price;
+                            final int discountedPrice =
+                                product.discountedPrice ?? price;
+                            final int discount = product.discount;
+                            final bool hasDiscount =
+                                discount > 0 && discountedPrice < price;
+
                             void goToDetails() => context.push(
-                              '/product-details',
-                              extra: product,
-                            );
+                                  '/product-details',
+                                  extra: product,
+                                );
 
                             return AspectRatio(
                               aspectRatio: 0.60,
@@ -185,10 +193,11 @@ class SearchScreen extends StatelessWidget {
                                         onTap: goToDetails,
                                         child: ProductCard(
                                           title: product.name,
-                                          price: '${product.price} د.ع',
-                                          discount: product.discount != 0
-                                              ? '-${product.discount}%'
-                                              : null,
+                                          price: '$discountedPrice د.ع',
+                                          originalPrice:
+                                              hasDiscount ? price : null,
+                                          discount:
+                                              hasDiscount ? '-$discount%' : null,
                                           imageUrl: product.images.isNotEmpty
                                               ? product.images[0]
                                               : null,
@@ -196,8 +205,8 @@ class SearchScreen extends StatelessWidget {
                                           isFavorite: isFav,
                                           onFavoriteToggle: () {
                                             context.read<FavoriteBloc>().add(
-                                              ToggleFavorite(product.id),
-                                            );
+                                                  ToggleFavorite(product.id),
+                                                );
                                           },
                                         ),
                                       ),
@@ -210,7 +219,8 @@ class SearchScreen extends StatelessWidget {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: kPrimary,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
+                                            borderRadius:
+                                                BorderRadius.circular(
                                               8,
                                             ),
                                           ),
@@ -249,6 +259,7 @@ class SearchScreen extends StatelessWidget {
   }
 }
 
+// الفلاتر كما هي (بلا تعديل)
 class _FilterDialog extends StatefulWidget {
   const _FilterDialog();
 
@@ -263,7 +274,6 @@ class _FilterDialogState extends State<_FilterDialog> {
   final TextEditingController minPriceController = TextEditingController();
   final TextEditingController maxPriceController = TextEditingController();
 
-  // تحويل الخيارات العربية للجنس إلى backend
   String convertGenderToBackend(String label) {
     switch (label.trim()) {
       case 'رجالي':
@@ -279,7 +289,6 @@ class _FilterDialogState extends State<_FilterDialog> {
     }
   }
 
-  // تحويل نوع المنتج من عربي إلى backend (عدّل الماب حسب ما موجود عندك بالباك-إند)
   String convertTypeToBackend(String label) {
     switch (label.trim()) {
       case 'تيشيرتات':
@@ -315,9 +324,8 @@ class _FilterDialogState extends State<_FilterDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final borderColor = isDark ? Colors.white12 : const Color(0xFFD6D6D6);
-    final chipBgColor = isDark
-        ? const Color(0xFF2C2C2C)
-        : const Color(0xFFF0F0F0);
+    final chipBgColor =
+        isDark ? const Color(0xFF2C2C2C) : const Color(0xFFF0F0F0);
     final textColor =
         Theme.of(context).textTheme.bodyLarge?.color ?? Colors.black;
 
@@ -468,21 +476,21 @@ class _FilterDialogState extends State<_FilterDialog> {
                     final min = minPriceController.text.trim();
                     final max = maxPriceController.text.trim();
                     context.read<SearchBloc>().add(
-                      SearchProductsWithFilters(
-                        query: '',
-                        types: selectedTypes
-                            .map(convertTypeToBackend)
-                            .where((e) => e.isNotEmpty)
-                            .toList(),
-                        genders: selectedGenders
-                            .map(convertGenderToBackend)
-                            .where((e) => e.isNotEmpty)
-                            .toList(),
-                        sizes: selectedSizes.toList(),
-                        minPrice: min.isEmpty ? null : double.tryParse(min),
-                        maxPrice: max.isEmpty ? null : double.tryParse(max),
-                      ),
-                    );
+                          SearchProductsWithFilters(
+                            query: '',
+                            types: selectedTypes
+                                .map(convertTypeToBackend)
+                                .where((e) => e.isNotEmpty)
+                                .toList(),
+                            genders: selectedGenders
+                                .map(convertGenderToBackend)
+                                .where((e) => e.isNotEmpty)
+                                .toList(),
+                            sizes: selectedSizes.toList(),
+                            minPrice: min.isEmpty ? null : double.tryParse(min),
+                            maxPrice: max.isEmpty ? null : double.tryParse(max),
+                          ),
+                        );
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(

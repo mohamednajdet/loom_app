@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import '../blocs/cart/cart_state.dart';
 import '../models/product_model.dart';
+import '../models/order_model.dart';
 import '../services/firebase_messaging_helper.dart'; // لجلب FCM Token
 
 final logger = Logger();
@@ -517,12 +518,14 @@ class ApiServiceDio {
   // جلب المنتجات مع فلاتر (gender/category)
   static Future<List<ProductModel>> fetchProducts({
     String? gender,
-    String? type, // ← بدل من category
+    String? type,
+    String? categoryType,
   }) async {
     try {
       final Map<String, dynamic> queryParameters = {};
       if (gender != null) queryParameters['gender'] = gender;
-      if (type != null) queryParameters['type'] = type; // ← تعديل هنا
+      if (type != null) queryParameters['type'] = type;
+      if (categoryType != null) queryParameters['categoryType'] = categoryType;
 
       final response = await dio.get(
         '/products/',
@@ -537,12 +540,13 @@ class ApiServiceDio {
     }
   }
 
-  // البحث عن المنتجات
+  // البحث عن المنتجات (دعم categoryTypes)
   static Future<List<ProductModel>> searchProducts({
     String? query,
     List<String>? types,
     List<String>? genders,
     List<String>? sizes,
+    List<String>? categoryTypes, // <-- أضف هنا
     double? minPrice,
     double? maxPrice,
   }) async {
@@ -560,6 +564,9 @@ class ApiServiceDio {
       }
       if (sizes != null && sizes.isNotEmpty) {
         params['sizes'] = sizes;
+      }
+      if (categoryTypes != null && categoryTypes.isNotEmpty) {
+        params['categoryTypes'] = categoryTypes; // <-- دعم مناسبة اللبس
       }
       if (minPrice != null) {
         params['min'] = minPrice;
@@ -583,6 +590,23 @@ class ApiServiceDio {
           .toList();
     } on DioException catch (e) {
       throw Exception(e.response?.data['message'] ?? 'فشل البحث عن المنتجات');
+    }
+  }
+
+  static Future<List<OrderModel>> fetchUserOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? '';
+    final userId = prefs.getString('userId') ?? '';
+    if (userId.isEmpty) throw Exception('لا يوجد مستخدم مسجل');
+    try {
+      final response = await dio.get(
+        '/orders/user/$userId',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      final List data = response.data['orders'];
+      return data.map((json) => OrderModel.fromJson(json)).toList();
+    } on DioException catch (e) {
+      throw Exception(e.response?.data['message'] ?? 'فشل تحميل الطلبات');
     }
   }
 }

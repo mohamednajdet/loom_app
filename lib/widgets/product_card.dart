@@ -3,17 +3,19 @@ import 'package:flutter/material.dart';
 class ProductCard extends StatelessWidget {
   final String title;
   final String price;
+  final int? originalPrice; // ✅ السعر الأصلي المشطوب
   final String? discount;
   final String? imageUrl;
   final bool showHeart;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
-  final Widget? childBelow; // ✅ ويدجت إضافي اختياري
+  final Widget? childBelow; // اختياري لإضافة ويدجت تحت السعر
 
   const ProductCard({
     super.key,
     required this.title,
     required this.price,
+    this.originalPrice,
     this.discount,
     this.imageUrl,
     this.showHeart = false,
@@ -28,7 +30,7 @@ class ProductCard extends StatelessWidget {
     final bgColor = isDark ? const Color(0xFF29434E) : Colors.white;
     final borderColor = isDark ? Colors.black26 : Colors.grey.shade300;
     final titleColor = isDark ? Colors.white : const Color(0xFF29434E);
-    final priceColor = isDark ? Colors.grey[300]! : const Color(0xFF757575);
+    final priceColor = isDark ? Colors.white : const Color(0xFF546E7A);
 
     return Container(
       decoration: BoxDecoration(
@@ -114,14 +116,35 @@ class ProductCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  price,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Cairo',
-                    color: priceColor,
-                  ),
-                  textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // ✅ السعر المخفض (الكبير)
+                    Text(
+                      price,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Cairo',
+                        color: priceColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (originalPrice != null) ...[
+                      const SizedBox(width: 6),
+                      // ✅ السعر الأصلي المشطوب
+                      Text(
+                        '$originalPrice د.ع',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                          fontFamily: 'Cairo',
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
                 ),
                 if (childBelow != null) ...[
                   const SizedBox(height: 8),

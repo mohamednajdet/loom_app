@@ -13,6 +13,8 @@ import 'blocs/cart/cart_bloc.dart';
 import 'blocs/favorite/favorite_bloc.dart';
 import 'blocs/favorite/favorite_event.dart';
 import 'blocs/search/search_bloc.dart';
+import 'blocs/orders/orders_bloc.dart';
+import 'blocs/orders/orders_event.dart';
 import 'blocs/theme_cubit.dart';
 
 // الشاشات
@@ -40,6 +42,8 @@ import 'screens/notifications_settings_screen.dart';
 import 'package:loom_app/screens/categories_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/search_screen.dart';
+import 'screens/orders_screen.dart';
+import 'screens/discounted_products_screen.dart';
 
 // الموديلات
 import 'models/product_model.dart';
@@ -94,6 +98,14 @@ final GoRouter _router = GoRouter(
         return ProductDetailsScreen(product: product);
       },
     ),
+    GoRoute(
+      path: '/orders',
+      builder: (context, state) => BlocProvider(
+        create: (_) =>
+            OrdersBloc()..add(LoadOrders()), // تحميل الطلبات عند فتح الشاشة
+        child: const OrdersScreen(),
+      ),
+    ),
     GoRoute(path: '/confirm-order', builder: (_, _) => const CheckoutScreen()),
     GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
     GoRoute(
@@ -143,12 +155,17 @@ final GoRouter _router = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/discounted_products',
+      builder: (context, state) => const DiscountedProductsScreen(),
+    ),
+    GoRoute(
       path: '/products',
       builder: (context, state) {
         final filters = state.extra as Map<String, dynamic>?;
         return ProductsScreen(
           gender: filters?['gender'],
-          type: filters?['type'], // ← بدل category
+          type: filters?['type'],
+          categoryType: filters?['categoryType'], // ← أضف هذا السطر 👈
         );
       },
     ),

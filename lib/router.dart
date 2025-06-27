@@ -24,9 +24,13 @@ import 'screens/notifications_settings_screen.dart';
 import 'package:loom_app/screens/categories_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/search_screen.dart';
+import 'screens/orders_screen.dart';
+import 'screens/discounted_products_screen.dart';
 
 // Bloc
 import 'blocs/search/search_bloc.dart';
+import 'blocs/orders/orders_bloc.dart';
+import 'blocs/orders/orders_event.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // الموديلات
@@ -118,6 +122,10 @@ final GoRouter router = GoRouter(
       builder: (context, state) => const NotificationsSettingsScreen(),
     ),
     GoRoute(
+      path: '/discounted_products',
+      builder: (context, state) => const DiscountedProductsScreen(),
+    ),
+    GoRoute(
       path: '/categories',
       builder: (context, state) => BlocProvider(
         create: (context) => SearchBloc(),
@@ -133,6 +141,13 @@ final GoRouter router = GoRouter(
         child: const SearchScreen(),
       ),
     ),
+    GoRoute(
+      path: '/orders',
+      builder: (context, state) => BlocProvider(
+        create: (_) => OrdersBloc()..add(LoadOrders()),
+        child: const OrdersScreen(),
+      ),
+    ),
 
     GoRoute(
       path: '/products',
@@ -140,7 +155,8 @@ final GoRouter router = GoRouter(
         final filters = state.extra as Map<String, dynamic>?;
         return ProductsScreen(
           gender: filters?['gender'],
-          type: filters?['type'], // ← بدل category
+          type: filters?['type'],
+          categoryType: filters?['categoryType'], // ← أضف هذا السطر 👈
         );
       },
     ),
