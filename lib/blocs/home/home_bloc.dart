@@ -3,22 +3,25 @@ import 'package:dio/dio.dart';
 import '../../models/product_model.dart';
 import 'home_event.dart';
 import 'home_state.dart';
+import '../../constants/api_constants.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitial()) {
     on<LoadProducts>(_onLoadProducts);
   }
 
-  Future<void> _onLoadProducts(LoadProducts event, Emitter<HomeState> emit) async {
+  Future<void> _onLoadProducts(
+    LoadProducts event,
+    Emitter<HomeState> emit,
+  ) async {
     emit(HomeLoading());
 
     try {
       final dio = Dio();
-      final response = await dio.get('http://10.0.2.2:5000/api/products');
+      final response = await dio.get('$apiBaseUrl/products'); // ✅ تصحيح هنا
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = response.data;
-
         final List<ProductModel> products = jsonList
             .map((json) => ProductModel.fromJson(json))
             .toList();

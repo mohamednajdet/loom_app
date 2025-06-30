@@ -9,7 +9,8 @@
     <application
         android:name="${applicationName}"
         android:label="loom_app"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <!-- ✅ استخدم public token فقط! -->
         <meta-data

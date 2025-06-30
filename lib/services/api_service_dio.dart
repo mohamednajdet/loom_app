@@ -5,12 +5,13 @@ import 'package:jwt_decoder/jwt_decoder.dart';
 import '../blocs/cart/cart_state.dart';
 import '../models/product_model.dart';
 import '../models/order_model.dart';
-import '../services/firebase_messaging_helper.dart'; // لجلب FCM Token
+import '../services/firebase_messaging_helper.dart';
+import '../constants/api_constants.dart'; // ✅ الاستيراد الجديد
 
 final logger = Logger();
 
 class ApiServiceDio {
-  static const String baseUrl = 'http://10.0.2.2:5000/api';
+  static const String baseUrl = apiBaseUrl;
   static final Dio dio = Dio(
     BaseOptions(
       baseUrl: baseUrl,

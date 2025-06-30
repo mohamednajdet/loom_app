@@ -224,6 +224,13 @@ class MyApp extends StatelessWidget {
             ),
             themeMode: themeMode,
             routerConfig: _router,
+            // 👇 هنا أضفت الـ MediaQuery في خاصية builder
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.0)),
+              child: child!,
+            ),
           );
         },
       ),
